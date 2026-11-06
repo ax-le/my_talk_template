@@ -1,0 +1,716 @@
+/*-- scss:defaults --*/
+// ============================================================================
+//  "talk" theme — colours and look of the PhD-defense template.
+//  Change the palette here; section slides read their defaults from these
+//  variables (and can be overridden in YAML, see README.md at the root of the template repository).
+// ============================================================================
+
+// Palette taken from the PowerPoint theme ("Rognage")
+$navy:  #1A2E40;   // dk2  — titles, bars
+$sand:  #EBE7DD;   // lt2  — background
+$teal:  #69A1AB;   // accent1
+$gold:  #F2C418;   // accent2
+
+$body-bg: $sand;
+$body-color: $navy;
+$link-color: $navy;
+$font-family-sans-serif: "Libre Franklin", "Franklin Gothic Book", "Franklin Gothic", Arial, sans-serif;
+$presentation-heading-font: $font-family-sans-serif;
+$presentation-heading-color: $navy;
+$presentation-heading-font-weight: 400;
+$presentation-font-size-root: 24.8px;   // PowerPoint body text, 20 pt (× 0.93: Libre Franklin is wider)
+
+// Mermaid diagrams (```{mermaid}```): Quarto's own theme variables, set to the slide look
+$mermaid-node-bg-color: $sand;      // node fill
+$mermaid-node-fg-color: #000;       // node border
+$mermaid-edge-color: #000;          // edges and arrowheads
+$mermaid-label-fg-color: $navy;     // node and edge text
+
+/*-- scss:rules --*/
+
+// ---- slide frame: the dark vertical bar of the master slide
+// It overflows the 16:9 frame vertically by the letter-box bleed (--sec-bleed-y, set by talk.js)
+// so it still reaches the screen edges when the display is taller than 16:9.
+.reveal .slides > section:not(.nobar)::before,
+.reveal .slides > section > section:not(.nobar)::before {
+  content: ""; position: absolute; left: 50px; top: calc(-1 * var(--sec-bleed-y, 640px));
+  width: 24px; height: calc(720px + 2 * var(--sec-bleed-y, 640px)); background: var(--talk-bar); z-index: -1;
+}
+.reveal .slides section { height: 720px; }
+// ordinary Markdown content starts under the title (absolutely positioned objects ignore this)
+// and runs from the left edge of the title to 60 px from the right edge of the slide, like a
+// box with right=60 (the PowerPoint placeholder stopped at 1152 px, a lot of text wrapped early)
+.reveal .slides > section:not(.talk-sec), .reveal .slides > section > section:not(.talk-sec) {
+  padding: var(--talk-content-top, 180px) var(--talk-content-right, 60px) 50px var(--talk-content-left, 144px);
+  box-sizing: border-box; text-align: left;
+}
+
+// ---- titles: same box as the PowerPoint title placeholder
+.reveal .slides section h2 {         // ## Title {top= left= width= size=} moves / resizes it
+  position: absolute; left: var(--title-left, 144px); top: var(--title-top, 72px); width: var(--title-width, 1008px);
+  margin: 0; padding: 4.8px 9.6px;
+  font-size: var(--title-size, 54.6px); line-height: 1.07; font-weight: 400;
+  color: var(--talk-title); text-transform: none; letter-spacing: 0;
+}
+.reveal .ttl { font-weight: 400; }
+
+// ---- generic positioned boxes produced from PowerPoint shapes
+.reveal .slides section .absolute { box-sizing: border-box; margin: 0; }
+.reveal .tb, .reveal .shp, .reveal .grp, .reveal .ln-box { box-sizing: border-box; }
+// text boxes converted from PowerPoint. Defaults = the usual values, so a box only states what
+// differs (attributes size=, color=, align=…, see README):
+//   .tb        text box: 18 pt, black, inner margin 0.05" × 0.1"
+//   .tb.body   content placeholder: 20 pt, theme text colour, line spacing 94 %
+//   .tb.ttl    title placeholder: 44 pt, title colour, line spacing 89 %
+.reveal .slides section .tb {
+  line-height: 1.15; display: flex !important; flex-direction: column; justify-content: flex-start; overflow: visible;
+  padding: 4.8px 9.6px; font-size: calc(18 * var(--talk-pt)); color: var(--talk-box-text, #000000);
+}
+.reveal .slides section .tb.body { font-size: calc(20 * var(--talk-pt)); color: var(--talk-text); line-height: 1.13; }
+.reveal .slides section .tb.ttl { font-size: calc(44 * var(--talk-pt)); color: var(--talk-title); line-height: 1.07; }
+.reveal .nowrap { white-space: nowrap; }
+.reveal .slides section .tb.va-ctr { justify-content: center; }
+.reveal .slides section .tb.va-b { justify-content: flex-end; }
+.reveal .tb > *, .reveal .shp > * { position: relative; }
+.reveal .tb p, .reveal .shp p { margin: 0; }
+.reveal .tb p + p { margin-top: 0.15em; }
+.reveal svg.geom { position: absolute !important; left: 0; top: 0; width: 100%; height: 100%; z-index: 0; }
+.reveal .ln-box { pointer-events: none; }
+.reveal .ln-box > p, .reveal .ln-box svg { margin: 0; display: block; }
+.reveal .v270 { writing-mode: vertical-rl; transform: rotate(180deg); align-items: center; }
+.reveal .v90  { writing-mode: vertical-rl; }
+.reveal .gap  { display: block; }
+.reveal .pc { display: block; text-align: center; }
+.reveal .pr { display: block; text-align: right; }
+// converter: paragraph of level 2 / 3 without a marker (PowerPoint marL + indent of that level)
+.reveal .ind1 { display: block; margin-left: var(--talk-mar2); text-indent: var(--talk-ind2); }
+.reveal .ind2 { display: block; margin-left: var(--talk-mar3); text-indent: var(--talk-ind3); }
+.reveal .underline { text-decoration: underline; }
+.reveal .caps { text-transform: uppercase; }   // PowerPoint cap="all"
+
+// images: no reveal default margins/max sizes
+.reveal .slides section img.absolute, .reveal .slides section .absolute img {
+  max-width: none; max-height: none; margin: 0; box-shadow: none; border: 0;
+}
+.reveal .slides section .absolute > p { margin: 0; }
+
+// ============================================================================
+//  LISTS — PowerPoint-like bullets for EVERY list (Markdown lists and lists converted from
+//  pptx text boxes alike). Each nesting level N (1–5, then again 1–5) reads CSS variables:
+//    --talk-bN      marker (defaults ■ – • ○ ►; others "✓", "➔", none); ol always shows "1."
+//    --talk-bN-size marker size (factor of the item text size)
+//    --talk-marN    left margin of the TEXT of level N, from the list's left edge (PowerPoint marL)
+//    --talk-indN    position of the marker relative to the text (PowerPoint indent, < 0 = hanging)
+//    --talk-spcbN   space before an item (PowerPoint spcBef); --talk-spca space after
+//    --talk-szN, --talk-stN   size and style of the level (Markdown lists only: in converted
+//                             text boxes the converter writes sizes and italics in the text)
+//  Set them on any element (YAML `talk: lists:`, attribute `bullets="• – ■"` on a div, the
+//  classes below, or a style=) and every list inside follows.
+// ============================================================================
+:root {
+  // five different markers (deeper levels cycle through them again)
+  --talk-b1: "■"; --talk-b2: "–"; --talk-b3: "•"; --talk-b4: "○"; --talk-b5: "►";
+  --talk-b1-size: 1.1; --talk-b2-size: 1; --talk-b3-size: 1; --talk-b4-size: 0.9; --talk-b5-size: 0.7;
+  // master slide: marL 0.42", 1", 1.5", 2", 2.5"; indent -0.42"  (96 px per inch)
+  --talk-mar1: 40.3px; --talk-mar2: 96px; --talk-mar3: 144px; --talk-mar4: 192px; --talk-mar5: 240px;
+  --talk-ind1: -40.3px; --talk-ind2: -40.3px; --talk-ind3: -40.3px; --talk-ind4: -40.3px; --talk-ind5: -40.3px;
+  // spcBef 10 pt (level 1), 5 pt (others); spcAft 2 pt; line spacing 94 %
+  --talk-spcb1: 13.3px; --talk-spcb2: 6.7px; --talk-spcb3: 6.7px; --talk-spcb4: 6.7px; --talk-spcb5: 6.7px; --talk-spca: 2.7px;
+  // text size (relative to the parent item) and style of each level
+  --talk-sz1: 1em; --talk-sz2: 1em; --talk-sz3: 0.9em; --talk-sz4: 1em; --talk-sz5: 1em;
+  --talk-st1: normal; --talk-st2: italic; --talk-st3: normal; --talk-st4: italic; --talk-st5: normal;
+  --talk-list-lh: 1.13;
+  --talk-bullet-color: currentColor;
+  --talk-bullet-font: Arial, "Liberation Sans", "Segoe UI Symbol", sans-serif;
+}
+// level variables, picked by nesting depth (li inherits them; ::before reads them). Depth d
+// uses the variables of level ((d - 1) mod 5) + 1; the text keeps moving right by 48 px.
+.reveal .slides ul, .reveal .slides ol { list-style: none; margin: 0; padding: 0; }
+@for $d from 1 through 10 {
+  $v: ($d - 1) % 5 + 1;
+  $sel: "";
+  @if $d > 1 { @for $k from 2 through $d { $sel: $sel + " li"; } }   // (Sass counts down when from > through)
+  $mar: if($d <= 5, "var(--talk-mar#{$d})", "calc(var(--talk-mar5) + #{($d - 5) * 48}px)");
+  $mp: if($d == 1, "0px", if($d - 1 <= 5, "var(--talk-mar#{$d - 1})", "calc(var(--talk-mar5) + #{($d - 6) * 48}px)"));
+  .reveal .slides#{$sel} ul, .reveal .slides#{$sel} ol {
+    --m: #{$mar}; --mp: #{$mp}; --i: var(--talk-ind#{$v}); --mk: var(--talk-b#{$v}); --mks: var(--talk-b#{$v}-size);
+    --sb: var(--talk-spcb#{$v}); --lsz: var(--talk-sz#{$v}); --lst: var(--talk-st#{$v});
+  }
+}
+.reveal .slides li {
+  position: relative; display: block; margin: var(--sb) 0 var(--talk-spca) 0;
+  padding-left: calc(var(--m) - var(--mp));
+}
+// the marker sits on the baseline of the first line (inline box hanging into the indent), as in
+// PowerPoint, so a tall equation in the item keeps it on its line…
+.reveal .slides li::before {
+  content: var(--mk); display: inline-block; width: max(calc(-1 * var(--i)), 0px); margin-left: var(--i);
+  text-indent: 0; font-family: var(--talk-bullet-font); font-style: normal; font-weight: 400; font-size: 1em;
+  transform: scale(var(--mks)); transform-origin: 0 70%; color: var(--talk-bullet-color);
+}
+// …unless the item starts with a block (loose list, fragment div): then it goes at the top
+.reveal .slides li:has(> :is(p, div, ul, ol):first-child)::before {
+  position: absolute; left: calc(var(--m) + var(--i) - var(--mp)); top: 0; margin-left: 0; width: auto;
+}
+.reveal .slides ol > li { counter-increment: talk-ol; }
+.reveal .slides ol { counter-reset: talk-ol; }
+.reveal .slides ol > li::before { content: counter(talk-ol) "."; font-family: inherit; transform: none; }
+// PowerPoint ignores the space before the first paragraph of a text box
+.reveal .slides section > ul:first-of-type > li:first-child,
+.reveal .slides section > ol:first-of-type > li:first-child,
+.reveal .slides :is(ul, ol):not(li *):first-child > li:first-child,
+.reveal .slides .tb > p:first-child:has(> svg.geom) + :is(ul, ol) > li:first-child { margin-top: 0; }
+// Markdown lists only: level sizes and styles of the master (in converted boxes they are in the text)
+.reveal .slides li:not(.tb li) { font-size: var(--lsz); font-style: var(--lst); line-height: var(--talk-list-lh); }
+.reveal .slides li:not(.tb li) > ul, .reveal .slides li:not(.tb li) > ol { font-size: 1em; }
+// a display equation in an item stays on the marker's line
+.reveal .slides li span.math.display { display: inline-block; vertical-align: middle; }
+.reveal .slides li span.math.display .katex-display { margin: 0; }
+// hide a marker until its (fragment) text is shown: native .incremental hides the whole li;
+// converted items and `levels=` incremental lists carry the fragment inside the item
+.reveal .slides li:has(> p > .fragment:not(.visible))::before,
+.reveal .slides li:has(> .fragment:not(.visible))::before,
+.reveal .slides li:has(> :is(p, *) > .fragment.fade-out.visible)::before,
+.reveal .slides li:has(> .fragment.fade-out.visible)::before,
+.reveal .slides li:has(> .fragment.fade-in-then-out.visible:not(.current-fragment))::before,
+.reveal .slides li:has(> p > .fragment.fade-in-then-out.visible:not(.current-fragment))::before { opacity: 0; }
+// marker presets — level-specific (converter: b-dot0 = level 1) or for all levels (b-dot)
+@each $name, $char in (sq: "■", dash: "–", dot: "•", circ: "○", tri: "►", check: "✓", arrow: "➔", none: "") {
+  $size: if($name == sq, 1.1, if($name == tri, 0.7, if($name == circ, 0.9, 1)));
+  .reveal .b-#{$name} {
+    @for $l from 1 through 5 { --talk-b#{$l}: "#{$char}"; --talk-b#{$l}-size: #{$size}; }
+  }
+  @for $l from 0 through 4 {
+    .reveal .b-#{$name}#{$l} { --talk-b#{$l + 1}: "#{$char}"; --talk-b#{$l + 1}-size: #{$size}; }
+  }
+}
+// no markers and no hanging indent at all
+.reveal .no-bullets {
+  --talk-mar1: 0px; --talk-mar2: 1.6em; --talk-mar3: 3.2em; --talk-mar4: 4.8em; --talk-mar5: 6.4em;
+  @for $l from 1 through 5 { --talk-ind#{$l}: 0px; --talk-b#{$l}: ""; }
+}
+// converter: an orphan sub-level item (PowerPoint level 2/3 paragraph that starts a list)
+.reveal .slides li:has(> .l1), .reveal .slides li:has(> p > .l1) {
+  --m: var(--talk-mar2); --i: var(--talk-ind2); --mk: var(--talk-b2); --mks: var(--talk-b2-size); --sb: var(--talk-spcb2); }
+.reveal .slides li:has(> .l2), .reveal .slides li:has(> p > .l2) {
+  --m: var(--talk-mar3); --i: var(--talk-ind3); --mk: var(--talk-b3); --mks: var(--talk-b3-size); --sb: var(--talk-spcb3); }
+.reveal .slides li p { margin: 0; }
+
+// ---- tables from PowerPoint
+.reveal table.ptbl { border-collapse: collapse; width: 100%; height: 100%; margin: 0; }
+.reveal table.ptbl td { border: 1px solid #fff; padding: 2px 6px; text-align: center; vertical-align: middle; }
+
+
+// slide number like the PowerPoint footer
+.reveal .slide-number { background: transparent; color: $navy; font-size: 14px; right: 24px; bottom: 12px; }
+.reveal .slide-number a { color: $navy; }
+// no counter on a full section header (it would sit on the frame); the summary shows it
+.reveal:has(.slides > section.present.section-header) .slide-number { visibility: hidden; }
+
+// MathJax inherits colour
+.reveal mjx-container { color: inherit; }
+
+// PowerPoint motion paths (used for the "matricisation" of the tensor)
+// ::: {.fragment .move fragment-index=1 dx=-320 dy=0} … ::: moves everything inside by (dx, dy) at that click
+.reveal .slides section .fragment.move { position: absolute; inset: 0; opacity: 1; visibility: inherit; pointer-events: none; transition: transform 1s ease-in-out; }
+.reveal .slides section .fragment.move > * { pointer-events: auto; }
+.reveal .slides section .fragment.move.visible { transform: translate(var(--dx, 0px), var(--dy, 0px)); }
+
+// inline SVG geometry behind the text of a shape: take it out of the text flow
+.reveal .tb > p:has(> svg.geom), .reveal .shp > p:has(> svg.geom) {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0;
+}
+
+// table style "Medium 2 – Accent 1" (PowerPoint default)
+.reveal table.ptbl.first-row tr:first-child td { background: $teal; color: #fff; font-weight: bold; }
+.reveal table.ptbl.band-row tr:nth-child(even) td { background: #CFE0E3; }
+.reveal table.ptbl.band-row tr:nth-child(odd):not(:first-child) td { background: #E8F0F2; }
+
+// keep inline equations on one line, like PowerPoint
+.reveal .tb .katex { white-space: nowrap; }
+.reveal .tb .katex-display { margin: 0.1em 0; }
+.reveal .hidden-start { visibility: hidden !important; }
+
+// ============================================================================
+//  THEME COLOURS as CSS variables — change them in YAML:
+//    talk: colors: { background: "#F4F1EA", text: "#1A2E40", title: "#1A2E40",
+//                    bar: "#1A2E40", accent: "#69A1AB" }
+//  (or per slide with Quarto's own  background-color="#…"  attribute)
+// ============================================================================
+:root {
+  --talk-pt: 1.24px;               // 1 pt of PowerPoint (4/3 px × 0.93 for Libre Franklin): size=18 → 18 pt
+  --talk-bg: #{$sand};
+  --talk-text: #{$navy};
+  --talk-title: #{$navy};
+  --talk-bar: #{$navy};
+  --talk-accent: #{$teal};
+}
+
+// ============================================================================
+//  SECTION SLIDES  (.section-header → .section-summary) and SIDE-PANEL slides
+//  All sizes/colours are CSS variables: set them globally (YAML `talk: section:`)
+//  or per slide (attributes on the "##" heading).
+// ============================================================================
+:root {
+  --sec-color: var(--talk-accent);  // block / panel colour
+  --sec-text: var(--talk-title);    // title + subtitle colour
+  --sec-ref-color: #000000;         // reference colour
+  --sec-border-width: 21px;         // black frame of the header / line closing the panel
+  --sec-border-color: #000000;
+  --sec-panel-width: 440px;         // width of the left panel (summary / side-panel)
+  --sec-title-size: 60px;           // title in the header (centre)
+  --sec-title-ratio: 0.8333;        // summary title size / header title size (set by the filter)
+  --sec-subtitle-size: 24px;        // header subtitle; in the panel: --sec-panel-subtitle-size, which follows
+                                    // panel-width like the summary title (talk.lua)
+  --sec-ref-size: 12px;
+  --sec-title-weight: 700;
+  --sec-title-width: 900px;         // max width of the centred title
+  --sec-panel-padding: 36px;        // inner margin of the panel (text centred in it, border excluded)
+  --sec-panel-top: 96px;            // vertical position of the title in the panel
+  --sec-bleed-x: 640px;             // set by talk.js to the real letter-box size of the screen
+  --sec-bleed-y: 640px;
+}
+
+.reveal .slides section.talk-sec { overflow: visible; }
+.reveal .slides section.talk-sec > h2 {             // the heading stays for the menu / TOC only
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); padding: 0; margin: 0;
+}
+
+// --- the colour block ---------------------------------------------------------
+// header : covers the whole screen, framed by black bars at the screen edges
+// summary: only the right bar is visible (the others are pushed off-screen)
+// Fill and bars are separate boxes animated with transforms only (smooth on any GPU).
+.reveal .talk-sec .sec-block, .reveal .talk-sec .sec-edge {
+  position: absolute; margin: 0; box-sizing: border-box; will-change: transform;
+}
+.reveal .talk-sec .sec-block { z-index: 2; background: var(--sec-color); }
+.reveal .talk-sec .sec-edge  { z-index: 2; background: var(--sec-border-color); }
+.reveal .talk-sec-header .sec-block {
+  left: calc(-1 * var(--sec-bleed-x)); top: calc(-1 * var(--sec-bleed-y));
+  width: calc(1280px + 2 * var(--sec-bleed-x)); height: calc(720px + 2 * var(--sec-bleed-y));
+}
+.reveal .talk-sec-header .sec-edge-l, .reveal .talk-sec-header .sec-edge-r {
+  top: calc(-1 * var(--sec-bleed-y)); width: var(--sec-border-width); height: calc(720px + 2 * var(--sec-bleed-y));
+}
+.reveal .talk-sec-header .sec-edge-l { left: calc(-1 * var(--sec-bleed-x)); }
+.reveal .talk-sec-header .sec-edge-r { left: calc(1280px + var(--sec-bleed-x) - var(--sec-border-width)); }
+.reveal .talk-sec-header .sec-edge-t, .reveal .talk-sec-header .sec-edge-b {
+  left: calc(-1 * var(--sec-bleed-x)); width: calc(1280px + 2 * var(--sec-bleed-x)); height: var(--sec-border-width);
+}
+.reveal .talk-sec-header .sec-edge-t { top: calc(-1 * var(--sec-bleed-y)); }
+.reveal .talk-sec-header .sec-edge-b { top: calc(720px + var(--sec-bleed-y) - var(--sec-border-width)); }
+
+.reveal .talk-sec-summary .sec-block, .reveal .talk-sec-panel .sec-block {
+  left: calc(-1 * var(--sec-bleed-x)); top: calc(-1 * var(--sec-bleed-y));
+  width: calc(var(--sec-panel-width) + var(--sec-bleed-x)); height: calc(720px + 2 * var(--sec-bleed-y));
+}
+.reveal .talk-sec-summary .sec-edge-l, .reveal .talk-sec-panel .sec-edge-l,
+.reveal .talk-sec-summary .sec-edge-r, .reveal .talk-sec-panel .sec-edge-r {
+  top: calc(-1 * var(--sec-bleed-y)); width: var(--sec-border-width); height: calc(720px + 2 * var(--sec-bleed-y));
+}
+.reveal .talk-sec-summary .sec-edge-l, .reveal .talk-sec-panel .sec-edge-l { left: calc(-1 * var(--sec-bleed-x) - var(--sec-border-width)); }
+.reveal .talk-sec-summary .sec-edge-r, .reveal .talk-sec-panel .sec-edge-r { left: calc(var(--sec-panel-width) - var(--sec-border-width)); }
+.reveal .talk-sec-summary .sec-edge-t, .reveal .talk-sec-panel .sec-edge-t,
+.reveal .talk-sec-summary .sec-edge-b, .reveal .talk-sec-panel .sec-edge-b {
+  left: calc(-1 * var(--sec-bleed-x)); width: calc(var(--sec-panel-width) + var(--sec-bleed-x)); height: var(--sec-border-width);
+}
+.reveal .talk-sec-summary .sec-edge-t, .reveal .talk-sec-panel .sec-edge-t { top: calc(-1 * var(--sec-bleed-y) - var(--sec-border-width)); }
+.reveal .talk-sec-summary .sec-edge-b, .reveal .talk-sec-panel .sec-edge-b { top: calc(720px + var(--sec-bleed-y)); }
+.reveal .talk-sec .w { will-change: transform; }
+
+// --- title + subtitle ---------------------------------------------------------
+// The layout depends on .lay-header / .lay-summary (not on the slide), so that the
+// invisible "ghost" copy of the other slide's text sits exactly where it was.
+.reveal .talk-sec .sec-text { position: absolute; z-index: 3; color: var(--sec-text); margin: 0; }
+.reveal .talk-sec .sec-text.lay-header {
+  left: calc(640px - var(--sec-title-width) / 2); width: var(--sec-title-width);
+  top: 0; height: 720px; display: flex; flex-direction: column; justify-content: center; text-align: center;
+}
+// the text block is centred in the visible panel: same margin on both sides of it, the
+// closing border excluded
+.reveal .talk-sec { --sec-panel-text-width: calc(var(--sec-panel-width) - var(--sec-border-width) - 2 * var(--sec-panel-padding)); }
+.reveal .talk-sec .sec-text.lay-summary {
+  left: var(--sec-panel-padding); width: var(--sec-panel-text-width);
+  top: var(--sec-panel-top); text-align: left;
+}
+.reveal .talk-sec .sec-title {
+  font-weight: var(--sec-title-weight); line-height: 1.1; margin: 0 0 0.25em 0;
+  font-size: var(--sec-title-size);
+}
+// summary title = header title zoomed down: same computed font-size on both slides, so the
+// morph is a pure transform (no re-flow, no jump at the start of the animation)
+.reveal .talk-sec .lay-summary .sec-title {
+  zoom: var(--sec-title-ratio);
+  width: calc(var(--sec-panel-text-width) / var(--sec-title-ratio));
+}
+.reveal .talk-sec .w { display: inline-block; }                  // each word morphs on its own
+.reveal .talk-sec .wg { white-space: nowrap; }
+.reveal .talk-sec .underline .w, .reveal .talk-sec u .w { text-decoration: underline; }
+.reveal .talk-sec .sec-sub { font-size: var(--sec-subtitle-size); line-height: 1.25; }
+.reveal .talk-sec .lay-summary .sec-sub { font-size: var(--sec-panel-subtitle-size, var(--sec-subtitle-size)); }
+.reveal .talk-sec .sec-sub .sec-p { margin: 0.15em 0; }
+
+// --- references -----------------------------------------------------------------
+.reveal .talk-sec .sec-ref {
+  position: absolute; z-index: 3; font-size: var(--sec-ref-size); color: var(--sec-ref-color);
+  line-height: 1.3; text-align: left; margin: 0;
+}
+.reveal .talk-sec .sec-ref .sec-p { margin: 0 0 0.4em 0; }
+.reveal .talk-sec .sec-ref.lay-header  { left: 90px; width: 1100px; bottom: 40px; }
+.reveal .talk-sec .sec-ref.lay-summary {
+  left: var(--sec-panel-padding); width: var(--sec-panel-text-width); bottom: 40px;
+}
+
+// --- invisible copy of the other slide's text (fade in/out in place) -------------
+.reveal .talk-sec .sec-ghost { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; z-index: 3; pointer-events: none; margin: 0; }
+.reveal .talk-sec .sec-ghost .w { opacity: 0; }
+.reveal .talk-sec .sec-ghost .sec-title, .reveal .talk-sec .sec-ghost .sec-p, .reveal .talk-sec .sec-ghost { color: transparent; }
+.reveal .talk-sec .sec-ghost .katex { visibility: hidden; }
+
+// --- main content -------------------------------------------------------------------
+// summary: UNDER the colour block, so the shrinking panel uncovers it (wipe effect)
+// side-panel slides (no transition): above it, so pictures can sit on the panel
+.reveal .talk-sec .sec-main {
+  position: absolute; left: 0; top: 0; width: 1280px; height: 720px; z-index: 1; margin: 0;
+  padding: 80px 60px 40px calc(var(--sec-panel-width) + 60px); box-sizing: border-box; text-align: left;
+}
+.reveal .talk-sec-panel .sec-main { z-index: 4; pointer-events: none; }
+.reveal .talk-sec-panel .sec-main > * { pointer-events: auto; }
+
+// ============================================================================
+//  CITATIONS  (bibliography: refs.bib   +   [@key]   +   ::: {#refs} :::)
+// ============================================================================
+.reveal .slides section .slide-refs {
+  position: absolute; left: 96px; right: 140px; bottom: 6px; margin: 0; z-index: 5;
+  font-size: 11px; line-height: 1.25; color: #333; text-align: left;
+}
+.reveal .talk-sec .slide-refs { left: calc(var(--sec-panel-width) + 40px); }
+.reveal .slide-refs .talk-ref-entry p, .reveal .slide-refs .talk-ref-entry { margin: 0 0 2px 0; }
+.reveal .citation, .reveal .citation a { color: inherit; text-decoration: none; }
+.reveal .citation { white-space: nowrap; }      // a label never breaks inside its brackets
+.reveal .refs-only { display: none; }      // [[@key]]{.refs-only}: listed in the slide references, not shown in the text
+.reveal .talk-references { font-size: var(--talk-refs-size, 12.5px); line-height: 1.28; column-count: 2; column-gap: 40px; text-align: left; }
+.reveal .talk-references .talk-ref-entry { break-inside: avoid; margin: 0 0 6px 0; }
+.reveal .talk-references p { margin: 0; }
+.reveal .slides section.references-slide .talk-references,
+.reveal .slides section.references-slide #talk-refs {
+  position: absolute; left: 120px; top: 160px; width: 1100px; height: 540px; column-fill: auto;
+}
+
+// ============================================================================
+//  Highlights:  {hl="2-3"}  {cols=4 hl="2@1; 3@2"}  {hl="4@(30%,10%,8%,20%)"}
+//  The red part is a child of the object (it moves and resizes with it). In boxes with
+//  text it sits under the text and inside the border; on images it covers the image.
+// ============================================================================
+:root {
+  --talk-hl: #C00000; --talk-hl-opacity: .5;
+  // named highlight colours, usable as  hl="2 teal"  or  \hl{2}{teal}{…}  (extend in YAML: talk: highlight: colors)
+  --hl-red: #C00000; --hl-teal: #69A1AB; --hl-gold: #F2C418; --hl-orange: #DC9528;
+  --hl-purple: #9A5D78; --hl-green: #4A845E; --hl-brown: #87492C; --hl-navy: #1A2E40; --hl-black: #000;
+}
+.reveal .hl-host { --hl-c: var(--hl-color, var(--talk-hl)); }
+.reveal .hl-host:not(.absolute):not(.tilt) { position: relative; }
+.reveal span.hl-host { display: inline-block; }
+.reveal .math .hl-host { display: inline; }
+.reveal span.hl-img-host { line-height: 0; }
+.reveal .hl-img-host > img { display: block; margin: 0; max-width: none; max-height: none; }
+.reveal .hl-host.hl-under { isolation: isolate; }
+.reveal .hl-under > .hl-region { z-index: -1; }
+.reveal .matrix { display: flex !important; align-items: center; justify-content: center; border: 1px solid #000; box-sizing: border-box; }   // a matrix drawn as a box
+.reveal .hl-region { position: absolute; display: block; pointer-events: none; box-sizing: border-box; }
+// hl-pad: the highlight grows out of the object (a halo); hl-shape=round|ellipse: rounded
+.reveal .hl-fill {
+  display: block; position: absolute; inset: calc(-1 * var(--hl-pad, 0px));
+  border-radius: var(--hl-radius, 0);
+}
+.reveal .hl-fill::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: var(--hl-c); opacity: var(--hl-opacity, var(--talk-hl-opacity));
+}
+// grid highlights (talk.lua hl_host): the layer is transparent, the cells opaque and exactly on
+// the pixel grid of the box; a cell grows 1 px (--hl-dx/--hl-dy, set by hl_regions) only under a
+// neighbouring cell shown at the same time, so touching cells never show a seam at any zoom
+.reveal .hl-layer { position: absolute; inset: 0; display: block; pointer-events: none; opacity: var(--hl-opacity, var(--talk-hl-opacity)); }
+.reveal .hl-under > .hl-layer { z-index: -1; }
+.reveal .hl-layer .hl-fill { inset: 0 calc(-1 * var(--hl-dx, 0px)) calc(-1 * var(--hl-dy, 0px)) 0; }
+.reveal .hl-layer .hl-fill::before { opacity: 1; }
+.reveal .hl-outline .hl-fill::before { background: none; opacity: 1; box-shadow: inset 0 0 0 3px var(--hl-c); }
+.reveal .hl-outline > .hl-region { z-index: 1; }
+// equations: \hl{steps}{colour}{part} (rounded box) and \hlo{steps}{colour}{part} (oval)
+.reveal .hl-math-slot:not(.placed) { display: none; }
+.reveal .math .hl-host { --hl-pad: .12em; --hl-radius: .3em; }
+.reveal .math .hl-host.hl-oval { --hl-pad: .2em; --hl-radius: 50%; }
+// ---- annotations of equations / objects: ::: {.annot to=… pos=…} label :::
+.reveal .annot-wrap, .reveal .annot { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 3; }
+.reveal .annot { --annot-c: var(--talk-text, #1A2E40); color: var(--annot-c); }
+.reveal .annot-box { position: absolute; display: flex; flex-direction: column; align-items: center; white-space: nowrap; }
+.reveal .annot-label {
+  font-size: var(--annot-size, 24px); line-height: 1.15; text-align: center;
+  border: 1px solid var(--annot-c); padding: 2px 8px; background: var(--talk-bg, #EBE7DD);
+}
+.reveal .annot-label p { margin: 0; }
+.reveal .annot[data-box="false"] .annot-label { border: none; background: none; padding: 0 2px; }
+.reveal .annot-sub { font-size: var(--annot-sub-size, 18px); color: var(--talk-text, #000); margin-top: 3px; }
+.reveal .annot-sub p { margin: 0; }
+.reveal svg.annot-arrows { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.reveal svg.annot-arrows polygon { fill: var(--annot-c); opacity: .5; }
+.reveal svg.annot-arrows.thin polygon { opacity: 1; }
+
+// press R during the talk preparation: shows every highlight area, its steps, and the grids
+.talk-hl-debug .reveal .hl-region, .talk-hl-debug .reveal .hl-region .hl-fill { opacity: 1 !important; visibility: visible !important; }
+.talk-hl-debug .reveal .hl-region { outline: 1px dashed #c00; z-index: 5 !important; }
+.talk-hl-debug .reveal .hl-region > .hl-fill::before { opacity: .25; }
+.talk-hl-debug .reveal .hl-region::after {
+  content: attr(data-hl); position: absolute; left: 1px; top: 0; font: 600 9px/1 sans-serif; color: #c00;
+  background: rgba(255, 255, 255, .8); padding: 1px 2px; white-space: nowrap;
+}
+.talk-hl-debug .reveal .hl-gridded::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4;
+  background-image:
+    linear-gradient(to right, rgba(0, 90, 200, .7) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 90, 200, .7) 1px, transparent 1px);
+  background-size: calc(100% / var(--hl-cols)) 100%, 100% calc(100% / var(--hl-rows));
+}
+
+// ============================================================================
+//  3D tilt:  ![](img.png){rotate-x=… rotate-y=… rotate-z=… perspective=…}
+// ============================================================================
+.reveal .tilt { backface-visibility: visible; }
+.reveal .tilt-shadow { box-shadow: 6px 10px 18px rgba(0, 0, 0, .25); }
+
+// ============================================================================
+//  AUDIO buttons  ({{< audio >}} shortcode, or any element with data-audio)
+// ============================================================================
+// every element with data-audio is a button (talk.js); icons and pictures also show it:
+// pointer cursor, slight zoom on hover, gold glow while playing, red glow when blocked
+.reveal [data-audio] { cursor: pointer; }
+.reveal :is(.audio-btn, img[data-audio]) { transition: transform .15s, filter .15s; }
+.reveal :is(.audio-btn, img[data-audio]):hover { transform: scale(1.12); }
+.reveal :is(.audio-btn, img[data-audio]).playing { filter: drop-shadow(0 0 6px $gold) drop-shadow(0 0 2px $gold); }
+.reveal :is(.audio-btn, img[data-audio]).blocked { filter: drop-shadow(0 0 4px #c00); }
+:root { --talk-audio-size: 2em; }     // speaker icon (YAML talk: audio: size, or size= on one icon)
+.reveal .talk-audio { display: inline-flex; align-items: center; gap: .3em; vertical-align: middle; color: $navy; }
+// the click area is larger than the icon (padding), without moving the text around it
+.reveal .talk-audio svg {
+  width: var(--talk-audio-size); height: var(--talk-audio-size); flex: none;
+  padding: .25em; box-sizing: content-box;
+  // a big icon in a line of text must not push the lines apart: it overflows vertically
+  margin: calc((1.2em - var(--talk-audio-size)) / 2 - .25em) -.25em;
+}
+.reveal .talk-audio.playing svg .wave { animation: talk-wave 0.9s infinite; }
+@keyframes talk-wave { 50% { opacity: .25; } }
+
+// ============================================================================
+//  SLIDE NUMBERS of special slides (.test-slide, .additional): label written by talk.js
+// ============================================================================
+.reveal .slide-number .slide-number-a { white-space: nowrap; }
+
+// ============================================================================
+//  SECTION STYLE "simple" (section-style=simple or YAML talk: section: style: simple)
+//  and the summary slide turned into an ordinary slide (its heading hidden)
+// ============================================================================
+.reveal .slides section.talk-hidden-title > h2 {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); padding: 0; margin: 0;
+}
+
+// ============================================================================
+//  TABLE OF CONTENTS  (## Outline {.toc-slide}, or ::: {#toc} ::: anywhere)
+//  Basic look only; restyle with .talk-toc / .toc-item / .toc-title / .toc-summary.
+// ============================================================================
+.reveal .talk-toc { counter-reset: talk-toc; display: flex; flex-direction: column; gap: 14px; }
+.reveal .talk-toc .toc-item { counter-increment: talk-toc; position: relative; padding-left: 40px; }
+.reveal .talk-toc .toc-item::before {
+  content: counter(talk-toc) "."; position: absolute; left: 0; top: 0; color: var(--talk-accent); font-weight: 700;
+}
+.reveal .talk-toc .toc-title a { color: inherit; font-weight: 600; text-decoration: none; }
+.reveal .talk-toc .toc-title p, .reveal .talk-toc .toc-summary p { margin: 0; }
+.reveal .talk-toc .toc-summary { font-size: 0.7em; font-style: italic; opacity: 0.8; }
+.reveal .talk-toc .toc-summary .sec-ref, .reveal .talk-toc .toc-summary .talk-ref-entry { display: none; }
+
+// ============================================================================
+//  GRID BOXES: one box divided into cells: cols= / rows= (+ a list = the cells' text),
+//  lines= (lines between cells), hl= (coloured cells at clicks). See README "Grid boxes".
+//  Cells and lines are absolutely placed in % of the box; lines lie above the highlights.
+// ============================================================================
+.reveal .slides .grid-box:not(.absolute) { position: relative; }
+.reveal .slides .grid-box > .seg {
+  position: absolute; box-sizing: border-box; margin: 0;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 0 2px; line-height: 1.1; overflow: hidden; white-space: nowrap;
+}
+.reveal .slides .grid-box > .seg > p { margin: 0; }
+.reveal .slides .grid-box > .grid-line { position: absolute; z-index: 2; pointer-events: none; }
+
+// delayed appearance ({.fragment delay=3.9}, talk.js module 6): only on the way in
+.reveal .slides .fragment.visible[data-delay] { transition-delay: var(--talk-delay, 0s); }
+// delay=end: shown at its click, invisible until the sound of that click ends (talk.js, audio)
+.reveal .slides .fragment.visible.talk-waiting { opacity: 0; visibility: hidden; transition-delay: 0s; }
+
+// ============================================================================
+//  PUSH TRANSITION  (## Title {push=up|down|left|right}, PowerPoint "Push")
+//  Both slides move together. Only the two states of the push are animated; any other
+//  change of these slides is instant (no fade, no motion). See talk.lua push_transitions.
+// ============================================================================
+:root { --talk-push-duration: 0.8s; }   // YAML talk: push-duration
+.reveal .slides > section[data-transition=talk-push] {
+  transition-property: transform; transition-duration: var(--talk-push-duration); transition-timing-function: ease-in-out;
+}
+.reveal .slides > section[data-transition=talk-push]:not(.present) .sec-edge:not(.sec-edge-r),
+.reveal .slides > section.talk-pushing .sec-edge:not(.sec-edge-r) { visibility: hidden; }   // .talk-pushing: talk.js
+// a push slide is shown only while current or while it moves (.talk-pushing): otherwise it
+// waits off screen, and the section morphs change the bleed it is shifted by (it would drift in)
+.reveal .slides > section[data-transition=talk-push]:not(.present):not(.talk-pushing) { visibility: hidden; }
+.reveal .slides > section.talk-push-in:not(.talk-push-out).past,
+.reveal .slides > section.talk-push-out:not(.talk-push-in).future { transform: none; opacity: 0; transition: none; }
+// one screen (slide + letter-box bleed): the two slides stay side by side, like PowerPoint.
+// The border bars a section panel keeps just outside the screen (for its Morph) are hidden
+// while the slide is not the current one, so they never show up next to the other slide.
+$pv: "calc(100% + 2 * var(--sec-bleed-y))";
+$ph: "calc(100% + 2 * var(--sec-bleed-x))";
+@each $dir, $in, $out in (up, "0, #{$pv}", "0, calc(-1 * #{$pv})"), (down, "0, calc(-1 * #{$pv})", "0, #{$pv}"),
+                         (left, "#{$ph}, 0", "calc(-1 * #{$ph}), 0"), (right, "calc(-1 * #{$ph}), 0", "#{$ph}, 0") {
+  .reveal .slides > section.talk-push-in-#{$dir}.future { transform: translate(#{$in}); opacity: 1; }
+  .reveal .slides > section.talk-push-out-#{$dir}.past { transform: translate(#{$out}); opacity: 1; }
+}
+
+// ============================================================================
+//  CAPTIONED PICTURES: a native figure ![Name](photo.jpg) in a box with .caption-top
+//  (caption above, e.g. a name over a photo) or .caption-bottom (below). The box gives the
+//  place (left= top=; a width= is not needed): the figure shrinks to the picture, whatever its
+//  width= / height=, and the caption hangs just outside the picture, centred on it, so the
+//  picture never moves whatever the caption's size. The caption takes the box's font
+//  (size=, color=), without Quarto's small grey caption style.
+// ============================================================================
+.reveal :is(.caption-top, .caption-bottom) :is(.quarto-figure, figure, figure > p) {
+  margin: 0; padding: 0; font-size: inherit; color: inherit; position: relative;
+}
+.reveal :is(.caption-top, .caption-bottom) figure { width: fit-content; }   // = the picture's width
+.reveal :is(.caption-top, .caption-bottom) figure img { display: block; margin: 0; max-width: none; max-height: none; }
+.reveal .slide :is(.caption-top, .caption-bottom) figure > figcaption {   // beats Quarto's 0.7em
+  position: absolute; left: 50%; transform: translateX(-50%);   // centred on the picture,
+  white-space: nowrap;                                          // a long name overflows evenly
+  font-size: inherit; color: inherit; font-style: inherit; text-align: center; margin: 0; padding: 0; line-height: 1.2;
+}
+.reveal .slide .caption-top figure > figcaption { bottom: 100%; margin-bottom: 0.15em; }
+.reveal .slide .caption-bottom figure > figcaption { top: 100%; margin-top: 0.15em; }
+
+// ============================================================================
+//  TITLE SLIDE  (## {.title-slide}, filled from the YAML: see talk.lua title_slides)
+//  Accent background, two corner frames (top left, bottom right), centred text, logos at the
+//  bottom left. Every size and colour is a variable, to restyle it for another talk.
+// ============================================================================
+.reveal .slides section.title-slide {
+  --ts-frame: var(--talk-bar); --ts-frame-w: 42px; --ts-frame-arm-x: 344px; --ts-frame-arm-y: 463px;
+  --ts-frame-inset-x: 79px; --ts-frame-inset-y: 78px;
+  --ts-title-color: var(--talk-title); --ts-title-size: calc(36 * var(--talk-pt));
+  --ts-byline-color: var(--talk-bg); --ts-byline-size: calc(24 * var(--talk-pt));
+  --ts-note-color: #E1ECEE; --ts-note-size: calc(20 * var(--talk-pt));
+  --ts-date-color: #A2C4CB; --ts-date-size: calc(20 * var(--talk-pt));
+  padding: 0;
+}
+.reveal .slides section.title-slide > h2 {          // the heading stays for the menu only
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); padding: 0; margin: 0;
+}
+.reveal .slides section.title-slide::before, .reveal .slides section.title-slide::after {
+  content: ""; position: absolute; box-sizing: border-box; pointer-events: none;
+  width: var(--ts-frame-arm-x); height: var(--ts-frame-arm-y); border: 0 solid var(--ts-frame);
+}
+.reveal .slides section.title-slide::before {
+  left: var(--ts-frame-inset-x); top: var(--ts-frame-inset-y);
+  border-left-width: var(--ts-frame-w); border-top-width: var(--ts-frame-w);
+}
+.reveal .slides section.title-slide::after {
+  right: var(--ts-frame-inset-x); bottom: var(--ts-frame-inset-y);
+  border-right-width: var(--ts-frame-w); border-bottom-width: var(--ts-frame-w);
+}
+.reveal .slides section.title-slide .ts-text {
+  position: absolute; left: 174px; top: 120px; width: 932px; height: 470px;
+  display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+}
+.reveal .title-slide .ts-title {
+  color: var(--ts-title-color); font-size: var(--ts-title-size); font-weight: 700; line-height: 1.07;
+  text-transform: uppercase; margin-bottom: 0.7em;
+}
+.reveal .title-slide .ts-byline { color: var(--ts-byline-color); font-size: var(--ts-byline-size); line-height: 1.3; }
+.reveal .title-slide .ts-note { color: var(--ts-note-color); font-size: var(--ts-note-size); line-height: 1.3; }
+.reveal .title-slide .ts-date { color: var(--ts-date-color); font-size: var(--ts-date-size); font-style: italic; margin-top: 1.4em; }
+.reveal .title-slide .ts-logos {
+  position: absolute; left: 40px; bottom: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.reveal .title-slide .ts-logos img { display: block; margin: 0; max-width: 240px; max-height: 110px; }
+
+// ============================================================================
+//  DIAGRAMS — a ```{mermaid}``` chart inside a positioned box fills the box
+//  (aspect ratio kept, centred): ::: {.absolute left= top= width= height=}
+// ============================================================================
+.reveal .absolute svg.mermaid-js { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none !important; }
+// Quarto draws the diagrams on page load, inside their slide: a slide still holding an undrawn diagram
+// is laid out (invisibly) even when reveal hides it (display: none), or it could not be measured
+.reveal .slides section:has(pre.mermaid-js) { display: block !important; visibility: hidden; }
+
+// ============================================================================
+//  FLOW — a horizontal block diagram drawn by the layout, not by hand:
+//    ::: {.absolute .flow left= top= width= height=}
+//    [$X$]{.box width=42 height=100% dim="ft"} [Encoder]{shape=shrink width=113 height=100% taper=25%}
+//    $\xrightarrow{a()}$ [$\hat X$]{.box width=42 height=100% dim="ft" .dim-right}
+//    :::
+//  The items sit in one row, centred vertically, in source order, touching (add gap= in px).
+//  .box: framed box · shape=shrink / grow…: any shape (see SHAPES) · dim="ft": dimension arrow
+//  along the left side (.dim-right: right side) · anything else (maths, text) is a plain item.
+// ============================================================================
+.reveal .flow { color: var(--talk-box-text, #000); }
+.reveal .flow > p { display: flex; align-items: center; height: 100%; margin: 0; gap: var(--flow-gap, 0px); }
+.reveal .flow > p > :is(.box, .shape) {
+  position: relative; box-sizing: border-box; flex: none;
+  display: block; align-content: unsafe center; text-align: center; line-height: 1.1;   // content centred both ways
+}
+// dimension: an upward arrow 14 px off the box side, its label (maths italic) beyond it
+.reveal .flow [data-dim]::before, .reveal .flow [data-dim]::after { position: absolute; top: 0; bottom: 0; }
+.reveal .flow [data-dim]::after {
+  content: ""; width: 7px; right: calc(100% + 11px); background: #000;
+  clip-path: polygon(50% 0, 100% 7px, calc(50% + 0.5px) 7px, calc(50% + 0.5px) 100%, calc(50% - 0.5px) 100%, calc(50% - 0.5px) 7px, 0 7px);
+}
+.reveal .flow [data-dim]::before {
+  content: attr(data-dim); right: calc(100% + 30px); display: flex; align-items: center;
+  font-family: KaTeX_Math, serif; font-style: italic; font-size: 1.21em;
+}
+.reveal .flow .dim-right[data-dim]::after { right: auto; left: calc(100% + 11px); }
+.reveal .flow .dim-right[data-dim]::before { right: auto; left: calc(100% + 30px); }
+
+// ============================================================================
+//  BOXES AND SHAPES
+//  .box    : a framed box (1 px black, slide background), text centred both ways, 18 pt black;
+//  .filled : PowerPoint's default shape style: accent fill, darker accent outline, background-coloured
+//            text, centred. border= / background= / size= / color= change either of them.
+//  shape=… (talk.lua `shape`): the outline is an SVG drawn behind the content (svg.geom), the
+//         content stays on top.
+// ============================================================================
+.reveal { --talk-accent-dark: color-mix(in srgb, var(--talk-accent), #000 50%); }
+.reveal .slides section :is(.box, .filled) {
+  box-sizing: border-box; display: block; align-content: unsafe center; text-align: center;
+  padding: 4.8px 9.6px; font-size: calc(18 * var(--talk-pt)); line-height: 1.15;
+}
+.reveal .slides section .box { border: 1px solid #000; background: var(--talk-bg); color: var(--talk-box-text, #000000); }
+.reveal .slides section .filled { border: 3.67px solid var(--talk-accent-dark); background: var(--talk-accent); color: var(--talk-bg); }
+.reveal .slides section .shape:is(.box, .filled) { border: none; background: none; }
+.reveal .slides section .shape { box-sizing: border-box; align-content: unsafe center; text-align: center; }
+.reveal .slides section .shape > :not(svg.geom) { position: relative; }
+.reveal .slides section span.shape:not(.absolute) { display: inline-block; }
+
+// EMPTY LINES, as in PowerPoint: `-` alone on its line in a list (an empty item, no marker), or a
+// paragraph holding only `&nbsp;` (talk.lua turns it into div.empty-line)
+.reveal .slides li:empty { margin: 0; height: calc(1.73em + 5px); }
+.reveal .slides li li:empty { height: calc(1.49em + 5px); }
+.reveal .slides :is(li:empty:first-child, li:not(:empty) + li:empty) { margin-top: .5em; }
+.reveal .slides li:empty + li:empty { height: 1.73em; }
+.reveal .slides li li:empty + li:empty { height: 1.49em; }
+.reveal .slides li:empty::before { visibility: hidden; }
+.reveal .slides .empty-line { height: 1.73em; }
+
+// a one-line box written as a span has no <p>: give it the line height reveal gives to paragraphs,
+// so that it sits exactly like the same text in a ::: div
+.reveal .slides section span:is(.tb, .tb.ttl, .tb.body, .box, .filled) { line-height: 1.3; }
+// …and is a block (not a flex column, which would stack its words and formulas): .va-ctr / .va-b still work
+.reveal .slides section span.tb { display: block !important; }
+.reveal .slides section span.tb.va-ctr { align-content: unsafe center; }
+.reveal .slides section span.tb.va-b { align-content: unsafe end; }

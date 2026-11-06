@@ -1,0 +1,8 @@
+/* Libre Franklin (open-source revival of Franklin Gothic, the font of the original deck).
+   Shipped locally so the deck also works offline. */
+@font-face { font-family: "Libre Franklin"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/libre-franklin-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Libre Franklin"; font-style: italic; font-weight: 400; font-display: swap; src: url("fonts/libre-franklin-latin-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "Libre Franklin"; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/libre-franklin-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Libre Franklin"; font-style: italic; font-weight: 600; font-display: swap; src: url("fonts/libre-franklin-latin-600-italic.woff2") format("woff2"); }
+@font-face { font-family: "Libre Franklin"; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/libre-franklin-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Libre Franklin"; font-style: italic; font-weight: 700; font-display: swap; src: url("fonts/libre-franklin-latin-700-italic.woff2") format("woff2"); }

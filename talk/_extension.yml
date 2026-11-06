@@ -1,0 +1,28 @@
+title: talk
+author: Axel Marmoret
+version: 1.0.0
+quarto-required: ">=1.4.0"
+contributes:
+  shortcodes:
+    - audio.lua
+  formats:
+    revealjs:
+      theme: [default, talk.scss]
+      width: 1280
+      height: 720
+      margin: 0
+      center: false
+      transition: none
+      background-transition: none
+      slide-number: true
+      show-slide-number: all
+      hash-type: number
+      controls: true
+      progress: true
+      auto-animate-easing: ease-in-out
+      auto-animate-duration: 1
+      html-math-method:
+        method: katex
+        url: "_extensions/talk/katex/"   # relative to the deck's HTML (the tour overrides it)
+      filters:
+        - talk.lua

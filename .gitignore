@@ -1,0 +1,5 @@
+# rendered output of the tour (quarto render _extensions/tour/template.qmd from a deck)
+*.html
+*_files/
+.quarto/
+__pycache__/

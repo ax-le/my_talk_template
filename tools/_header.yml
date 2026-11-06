@@ -1,0 +1,55 @@
+---
+# PhD defense — Quarto / reveal.js version, converted from "Soutenance Thèse.pptx".
+# Template: _extensions/talk  (format: talk-revealjs) — see _extensions/talk/README.md
+# One "## " heading = one slide. Text is Markdown, maths is $LaTeX$, citations are [@key].
+# * Section slides:  ## Title {.section-header}  then  ## Title {.section-summary}
+# * Blue left panel without transition:  ## Title {.side-panel}
+# * PowerPoint objects keep their position in positioned divs (1280 × 720 px canvas).
+# * Morph  →  `auto-animate=true` on two slides + the SAME `data-id` on the objects to move.
+# * Click builds → `.fragment` with `data-fragment-index=N`.
+# * Audio → data-audio="…" (+ data-autoplay=true), or {{< audio media/x.mp3 autoplay=true >}}.
+# * 3D → {rotate-x=… rotate-y=… rotate-z=…}  or  {face=top|side|depth}.
+# * Speaker notes → `::: notes` (press "s").  Backup slides: ::: {.appendix} ::: (once).
+# * Title slide: ## {.title-slide}, filled from title / author / institute / subtitle / date
+#   and talk: title-slide: {note, logos} below.
+title: "Unsupervised<br>Machine Learning Paradigms<br>for the Representation of<br>Music Similarity and Structure"
+author: "Axel Marmoret"
+institute: "IRISA"
+subtitle: "PhD defense"
+date: 2022-12-02
+date-format: long
+format: talk-revealjs          # the template: _extensions/talk
+bibliography: refs.bib         # [@key] citations; labels = `shorthand` of each entry
+talk:
+  title-slide:                 # ## {.title-slide}: the fields above + these
+    note: "*Under the supervision of*<br>*Frédéric Bimbot and Jérémy E. Cohen*"
+    logos: [media/image3.png, media/image2.png]
+  colors:                      # theme colours (all optional)
+    background: "#EBE7DD"
+    text: "#1A2E40"
+    title: "#1A2E40"
+    bar: "#1A2E40"
+    accent: "#69A1AB"          # default colour of section blocks / panels
+  section:                     # section-header / section-summary / side-panel slides
+    panel-width: 440px
+    title-size: 60px
+    summary-title-size: 50px
+    border-width: 21px         # black frame of the header, line closing the panel
+    border-color: "#000000"
+    duration: 1.2
+  audio:
+    autoplay: false            # data-autoplay=true plays by itself; others on click
+    stop-on-slide-change: true
+  citations:
+    slide-refs: true           # references of each slide at its bottom
+    highlight-author: Marmoret # bold in the reference lists
+  highlight:
+    colors:                    # meaning of the colours of the song sections (slides 8, 46…):
+      intro: "#F2C418"         # usable as hl="1-@3 verse1", background=chorus, color=intro…
+      verse1: "#4A845E"
+      verse2: "#9A5D78"
+      chorus: "#69A1AB"
+      solo1: "#DC9528"
+      solo2: "#87492C"
+      outro: "#000000"
+---
