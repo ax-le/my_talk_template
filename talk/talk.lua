@@ -1118,6 +1118,18 @@ local function box_attrs(el)
     if a[k] then st[#st + 1] = "--" .. k .. ":" .. css_size(a[k]); a[k] = nil end
   end
   if a["gap"] and has_class(el, "flow") then st[#st + 1] = "--flow-gap:" .. css_size(a["gap"]); a["gap"] = nil end
+  if a["gap"] and has_class(el, "columns") then st[#st + 1] = "--talk-col-gap:" .. css_size(a["gap"]); a["gap"] = nil end
+  -- spacing="10 5": space before the items of a list, in pt (PowerPoint "space before"):
+  -- first value for level-1 items, second for deeper levels (one value: every level)
+  if a["spacing"] then
+    local v = {}
+    for x in tostring(a["spacing"]):gmatch("[%d%.]+") do v[#v + 1] = x end
+    for n = 1, 5 do
+      local pt = v[n == 1 and 1 or math.min(2, #v)]
+      if pt then st[#st + 1] = "--talk-spcb" .. n .. ":calc(" .. pt .. " * var(--talk-pt))" end
+    end
+    a["spacing"] = nil
+  end
   if a["size"] then st[#st + 1] = "font-size:calc(" .. a["size"] .. " * var(--talk-pt))"; a["size"] = nil end
   if a["color"] then st[#st + 1] = "color:" .. theme_color(a["color"]); a["color"] = nil end
   if a["background"] then st[#st + 1] = "background:" .. theme_color(a["background"]); a["background"] = nil end

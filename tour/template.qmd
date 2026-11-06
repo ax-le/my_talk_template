@@ -175,9 +175,10 @@ coloured cells at clicks, addressed `k`, `k-l`, `c,r`, `*` (same as on any objec
 <!-- EXPECT: Markdown lists: four different markers for four levels (■, – italic, • smaller,
      ○ italic; a 5th level would get ►, deeper levels start again at ■), hanging indents of the
      PowerPoint master (0.42", 1", 1.5", 2"), 10 pt before a level-1 item, 5 pt before the
-     others. All items shown at once. The numbered list shows 1. 2. -->
+     others. All items shown at once. The numbered list shows 1. 2. The two columns are
+     60 px apart (gap=60 on .columns). -->
 
-:::: {.columns}
+:::: {.columns gap=60}
 ::: {.column width="55%"}
 - Level 1 item, long enough to wrap onto a second line under its own text
   - Level 2, italic
@@ -218,6 +219,81 @@ Presets: `.b-sq .b-dash .b-dot .b-circ .b-tri .b-check .b-arrow .b-none` (all le
 `.b-dot0` … `.b-dot4`; per level `bullets="■ – • ○ ►"` (`none` = no marker); whole deck: YAML `talk: bullets:`;
 fine control: CSS variables `--talk-bN`, `--talk-marN`, `--talk-indN`, `--talk-spcbN` (README).
 :::
+
+## Lists: spacing {.no-slide-refs}
+
+<!-- EXPECT: four lists. Left: the default spacing (10 pt before a level-1 item, 5 pt before the
+     others). Middle left: spacing="20 10" doubles both. Middle right: spacing=0 packs the
+     items. Right: an empty line between two items ("-" alone) and a larger line-height. -->
+
+::: {.absolute left=144 top=190 width=240 size=18}
+- Default
+- 10 pt before
+  - 5 pt before
+  - at level 2
+- and so on
+:::
+
+::: {.absolute left=410 top=190 width=240 size=18 spacing="20 10"}
+- `spacing="20 10"`
+- 20 pt before
+  - 10 pt before
+  - at level 2
+- and so on
+:::
+
+::: {.absolute left=676 top=190 width=240 size=18 spacing=0}
+- `spacing=0`
+- nothing before
+  - nothing
+  - at level 2
+- and so on
+:::
+
+::: {.absolute left=942 top=190 width=240 size=18 line-height=1.5}
+- `line-height=1.5`
+- an empty line:
+-
+- `-` alone
+- and so on
+:::
+
+::: {.absolute left=144 top=560 width=1040 size=14.5}
+`spacing="A B"` = space before level-1 items / before deeper items, in pt (one value: every level);
+`line-height=` = line spacing; `-` alone = an empty line (indent it for a deeper level); whole deck:
+CSS variables `--talk-spcbN` (before), `--talk-spca` (after), `--talk-list-lh`.
+:::
+
+## Columns
+
+<!-- EXPECT: three columns of equal width, 40 px apart (default gap); below, two columns 30 % /
+     70 % with gap=80. Native Quarto syntax, plus gap= on .columns. -->
+
+:::: {.columns}
+::: {.column}
+- One
+- Three equal columns
+:::
+::: {.column}
+- Two
+- no width given
+:::
+::: {.column}
+- Three
+- 40 px apart
+:::
+::::
+
+&nbsp;
+
+:::: {.columns gap=80}
+::: {.column width="30%"}
+`width="30%"`, `gap=80`
+:::
+::: {.column width="70%"}
+`:::: {.columns gap=80}` then one `::: {.column width=…}` per column (any content: lists, pictures, boxes, maths).
+:::
+::::
 
 ## Lists: clicks {.no-slide-refs}
 
@@ -326,19 +402,11 @@ The summary inherits the header's options.
 ## Simple section style {.section-header section-style=simple}
 
 <!-- EXPECT: "simple" section: the framed colour block with the title only (the subtitle and
-     the reference line are dropped), no morph; the following summary becomes an ordinary
-     slide (no panel, title hidden) that keeps its content. Choose it per section
-     (section-style=simple|full) or for the deck (YAML talk: section: style: simple). -->
+     the reference line are dropped), no morph, no summary slide. Choose it per section
+     (section-style=simple|full) or for the deck (YAML talk: section: style: simple).
+     (A .section-summary written after a simple header is kept as an ordinary slide.) -->
 
 Subtitle (not shown in the simple style) [@marmoret2022barwise]
-
-## Simple section style {.section-summary}
-
-::: {.section-panel}
-Panel text (not shown in the simple style; still used by the table of contents)
-:::
-
-The summary's own content stays, on an ordinary slide.
 
 ## Morph (auto-animate) {auto-animate=true}
 

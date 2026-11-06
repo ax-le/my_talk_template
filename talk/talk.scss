@@ -137,7 +137,9 @@ $mermaid-label-fg-color: $navy;     // node and edge text
     --sb: var(--talk-spcb#{$v}); --lsz: var(--talk-sz#{$v}); --lst: var(--talk-st#{$v});
   }
 }
-.reveal .slides li {
+// (.slide in the selector: Quarto's own ".reveal .slide ul li { margin-top: .4em }" would win
+//  over ".reveal .slides li" and silently replace the spaces before the items)
+.reveal .slides .slide li {
   position: relative; display: block; margin: var(--sb) 0 var(--talk-spca) 0;
   padding-left: calc(var(--m) - var(--mp));
 }
@@ -634,10 +636,20 @@ $ph: "calc(100% + 2 * var(--sec-bleed-x))";
 .reveal .title-slide .ts-byline { color: var(--ts-byline-color); font-size: var(--ts-byline-size); line-height: 1.3; }
 .reveal .title-slide .ts-note { color: var(--ts-note-color); font-size: var(--ts-note-size); line-height: 1.3; }
 .reveal .title-slide .ts-date { color: var(--ts-date-color); font-size: var(--ts-date-size); font-style: italic; margin-top: 1.4em; }
-.reveal .title-slide .ts-logos {
-  position: absolute; left: 40px; bottom: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+.reveal .title-slide .ts-logos {                 // side by side, bottom left (--ts-logos-gap between them)
+  position: absolute; left: 40px; bottom: 12px; display: flex; flex-direction: row; align-items: center; gap: var(--ts-logos-gap, 28px);
 }
 .reveal .title-slide .ts-logos img { display: block; margin: 0; max-width: 240px; max-height: 110px; }
+
+// ============================================================================
+//  COLUMNS — native Quarto  :::: {.columns gap=60}  ::: {.column width="40%"} … :::  ::::
+//  Quarto lays the columns out as inline blocks with no space between them; here they are
+//  a flex row with a gap (gap= on .columns, default 40 px; widths are kept, columns without
+//  one share the space). Quarto's small inner margins are dropped: the gap does the spacing.
+// ============================================================================
+.reveal .slides div.columns { display: flex; align-items: flex-start; gap: var(--talk-col-gap, 40px); }
+.reveal .slides div.columns > .column { display: block; flex: 0 1 auto; min-width: 0; vertical-align: top; }
+.reveal .slides div.columns > .column > :not(ul, ol) { margin-left: 0; margin-right: 0; }
 
 // ============================================================================
 //  DIAGRAMS — a ```{mermaid}``` chart inside a positioned box fills the box

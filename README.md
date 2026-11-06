@@ -75,6 +75,8 @@ git clone git@github.com:ax-le/my_talk_template.git _extensions
 quarto preview _extensions/tour/template.qmd      # or: quarto render
 ```
 
+A plain `quarto preview` in that folder opens the project root, where there is no page (the only output is `_extensions/tour/template.html`), hence a "Not Found": either give the file name as above, or keep a one-line `index.html` at the root that redirects to `_extensions/tour/template.html` (the `template` deck does).
+
 Any real deck can list `_extensions/tour/template.qmd` next to its own `.qmd` in the same way, to check the template after a change. Notes for AI agents: `AGENTS.md`.
 
 ```yaml
@@ -146,7 +148,7 @@ date-format: long               # → December 2, 2022
 talk:
   title-slide:
     note: "*Under the supervision of*<br>*F. Bimbot and J. E. Cohen*"   # optional extra line
-    logos: [media/irisa.png, media/rennes.png]                         # bottom left, top to bottom
+    logos: [media/irisa.png, media/rennes.png]                         # bottom left, side by side
     # background: "#69A1AB"     # default: the accent colour;  date: "…" overrides the date text
 ```
 
@@ -205,8 +207,26 @@ Deeper levels start again with the markers of levels 1–5 (and keep moving righ
 - **One click per level-1 item** (PowerPoint "by 1st level paragraphs"): `::: {.incremental levels=1}` (also on a heading). Sub-items appear with their parent. `levels=2` makes levels 1 and 2 clicks.
 - **Pauses** `. . .` and `[text]{.fragment}` inside an item also work: the marker waits for the text.
 - **Other markers.** Per box or slide, with a class: `.b-sq`, `.b-dash`, `.b-dot`, `.b-circ`, `.b-tri`, `.b-check`, `.b-arrow`, `.b-none` (all levels), or `.b-dot0` … `.b-dot4` (one level; 0 = level 1). Or per level with an attribute: `::: {bullets="• – ✓ none"}`. For the whole deck: YAML `talk: bullets: "■ – • ○ ►"`. `.no-bullets` removes markers and hanging indents.
+- **Spacing.** `spacing="20 10"` on a box or slide: space before level-1 items / before deeper items, in pt (one value: every level; default 10 and 5). `line-height=1.5` sets the line spacing; `-` alone is an empty line (see Titles, empty lines).
 - **Fine control.** Everything is a CSS variable that any element can set (the converter writes them from the pptx when a text box differs from the master): `--talk-bN` (marker), `--talk-bN-size` (factor), `--talk-marN` (left edge of the text), `--talk-indN` (marker position relative to the text, negative = hanging), `--talk-spcbN` (space before), `--talk-spca` (space after), `--talk-szN` / `--talk-stN` (size / style of Markdown items), `--talk-bullet-color`, `--talk-bullet-font`.
 - Numbered lists (`1.`) use the same indents, with "1." markers.
+
+## Columns
+
+Native Quarto columns, laid out as a flex row with a gap (Quarto alone puts them side by side with no space):
+
+```markdown
+:::: {.columns gap=60}
+::: {.column width="40%"}
+…
+:::
+::: {.column width="60%"}
+…
+:::
+::::
+```
+
+`gap=` is in px (default 40); columns without `width=` share the space equally. Any content goes inside (lists, pictures, boxes, maths).
 
 ## Grid boxes: one box divided into cells
 
@@ -298,7 +318,7 @@ Slide content (placed right of the panel)
 
 ### Section style: full or simple
 
-The header → summary pair above is the **full** style. The **simple** style keeps only the header slide, with the title alone (no subtitle, no reference line, no morph); the summary slide, if any, becomes an ordinary slide that keeps its content but drops its panel (it is left out if it has no content).
+The header → summary pair above is the **full** style. The **simple** style keeps only the header slide, with the title alone (no subtitle, no reference line, no morph): write the header alone. (A `.section-summary` written after a simple header is kept as an ordinary slide with its content, panel dropped, and left out if it has no content.)
 
 - for one section: `## CBM algorithm {.section-header section-style=simple}` (or `section-style=full`);
 - for the whole deck: YAML `talk: section: style: simple`.
