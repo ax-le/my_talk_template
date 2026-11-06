@@ -37,30 +37,45 @@ This is the look of the PhD-defense deck as a reusable format: a 1280 × 720 can
 - short attributes (`left= top= size=18 color=accent`…) instead of `style=`, with PowerPoint-like defaults;
 - a basic table of contents built from the sections.
 
-## Use it in a new talk
+## Installing the template (read this first)
 
-This repository **is the `_extensions/` folder of a deck**: it holds the format (`talk/`), the arrows extension it uses (`arrows/`), the PowerPoint converter (`tools/`) and the feature tour / test deck (`tour/template.qmd`). A deck is a folder with your `.qmd`, your `media/`, your `.bib`, and this repository cloned as `_extensions`:
+**This repository is not a Quarto project and does not render on its own**: running `quarto render` or `quarto preview` inside it gives `… is not a project` / `Unable to read the extension 'talk'`. Quarto only finds a format in the `_extensions/` folder of the document being rendered (or of its project), so this repository is laid out to **be that `_extensions/` folder**: its root holds the format (`talk/`), the arrows extension it uses (`arrows/`), the PowerPoint converter (`tools/`) and the feature tour / test deck (`tour/template.qmd`).
+
+A **deck** is any folder with your `.qmd`, your `media/`, your `.bib`, and this repository cloned as `_extensions`. Three steps, from scratch:
 
 ```bash
 mkdir my-talk && cd my-talk
-git clone https://github.com/<you>/quarto-talk _extensions     # add _extensions/ to the deck's .gitignore
-cp _extensions/tour/template.qmd talk.qmd                        # or start from scratch with format: talk-revealjs
-quarto preview talk.qmd
+git clone git@github.com:ax-le/my_talk_template.git _extensions   # 1. the template, as the deck's _extensions/
+echo "_extensions/" >> .gitignore                                   # 2. the clone is not part of the deck's own repo
+cp _extensions/tour/template.qmd talk.qmd                           # 3. a starting point (or an empty file with
+quarto preview talk.qmd                                             #    "format: talk-revealjs" in its YAML)
 ```
 
-Because it is a clone, a template change made from inside any deck is a normal `git commit` + `git push` in `_extensions/`, and the other decks get it with `git pull` there. People who only want the format can also `quarto add <you>/quarto-talk`, which copies `talk/` and `arrows/` into their `_extensions/`.
+Because `_extensions/` is a clone, a template change made from inside any deck is a normal `git commit` + `git push` *in `_extensions/`*, and the other decks get it with `git -C _extensions pull`. If you already have the clone elsewhere on your machine, `git clone /path/to/my_talk_template _extensions` works too (then `git -C _extensions remote set-url origin git@github.com:ax-le/my_talk_template.git`).
 
-The tour (every feature, one slide each; its `EXPECT:` comments say what each slide must do) renders from inside a deck whose `_quarto.yml` lists it:
+Two alternatives, if you do not want a clone per deck:
+
+- `quarto add ax-le/my_talk_template` copies `talk/` and `arrows/` into your deck's `_extensions/` (no git link: run `quarto update` to get newer versions).
+- a directory junction / symlink named `_extensions` pointing at your clone (`mklink /J _extensions C:\path\to\my_talk_template` on Windows, `ln -s` elsewhere) — fine locally, invisible to git.
+
+### Previewing or testing the template itself
+
+The tour (`tour/template.qmd`: every feature, one slide each; its `EXPECT:` comments say what each slide must do) is also rendered **from a deck**, never from this repository. Quarto treats a file under `_extensions/` as outside the project unless the deck's `_quarto.yml` lists it, so a deck meant for the template itself contains nothing but that file:
 
 ```yaml
+# _quarto.yml of the "template" deck (all_the_pres/template in Axel's set-up)
 project:
   type: default
   render:
-    - talk.qmd
     - _extensions/tour/template.qmd
 ```
 
-then `quarto render _extensions/tour/template.qmd` (or `quarto preview` it). Notes for AI agents: `AGENTS.md`.
+```bash
+git clone git@github.com:ax-le/my_talk_template.git _extensions
+quarto preview _extensions/tour/template.qmd      # or: quarto render
+```
+
+Any real deck can list `_extensions/tour/template.qmd` next to its own `.qmd` in the same way, to check the template after a change. Notes for AI agents: `AGENTS.md`.
 
 ```yaml
 format: talk-revealjs

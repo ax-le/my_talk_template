@@ -41,10 +41,10 @@ This project has two objectives. Both matter; they come one after the other.
 
 ## 2. Architecture
 
-**Repository = the `_extensions/` folder of a deck.** The template lives in its own repository (`quarto-talk`, to be published on GitHub), whose root holds the extension folders directly, because Quarto only finds a format in the `_extensions/` of the document's folder (or of its project), and nowhere else. Every deck (e.g. `phd-defense-quarto/`) is a sibling folder: `index.qmd`, `media/`, `refs.bib`, `_quarto.yml`, and `_extensions/` = a `git clone` of the repository (git-ignored by the deck). A template change made inside a deck is committed and pushed from `_extensions/`; other decks `git pull` there. `quarto add <user>/quarto-talk` also works (Quarto picks up `talk/` and `arrows/` at the repository root).
+**Repository = the `_extensions/` folder of a deck.** The template lives in its own repository (github.com/ax-le/my_talk_template), whose root holds the extension folders directly, because Quarto only finds a format in the `_extensions/` of the document's folder (or of its project), and nowhere else; the repository itself is NOT a Quarto project and renders nothing. Decks live in another repository (`all_the_pres`: `phd-defense-quarto/`, `template/`, …); each deck folder holds `index.qmd`, `media/`, `refs.bib`, `_quarto.yml`, and `_extensions/` = a `git clone` of the template repository (git-ignored by the deck). `all_the_pres/template/` is a deck with no content of its own: its `_quarto.yml` only lists `_extensions/tour/template.qmd`, to preview and test the template. A template change made inside any deck is committed and pushed from `_extensions/`; other decks `git -C _extensions pull`. `quarto add ax-le/my_talk_template` also works (Quarto picks up `talk/` and `arrows/` at the repository root).
 
 ```
-quarto-talk/           (cloned as <deck>/_extensions/)
+my_talk_template/      (cloned as <deck>/_extensions/)
   README.md            human user guide;  AGENTS.md  this file;  working_instructions.md  (Claude project)
   talk/                the extension (below)
   arrows/              quarto-arrows (Emil Hvitfeldt), vendored, not modified

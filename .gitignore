@@ -3,3 +3,10 @@
 *_files/
 .quarto/
 __pycache__/
+
+/.quarto/
+**/*.quarto_ipynb
+
+Claude outputs
+Claude outputs/
+/Claude outputs/*
