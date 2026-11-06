@@ -1,3 +1,23 @@
+# TL;DR: Yet another Claude written template for presentations
+
+Hi!
+
+During my PhD, I developed a PowerPoint "template" (slides to be copy-pasted, rather than a real template) that I really liked, and that I still want to use. The main assets came from the 'morph' transition in PowerPoint. I think this makes it very easy to grasp an otherwise complex notion when going from matrices to tensors. It also makes pretty slides!
+
+But that included a physical dependence on PowerPoint and Windows, which started to become more of a problem with time (versioning is complicated, I need to keep a Windows laptop for presentations while I would prefer using a Linux distribution, most of the time it's shared in PDF so most of the stuff is lost in translation, etc.). So, I was kind of trapped with PowerPoint, the alternative being redeveloping my own template in an HTML-compatible format (and devoting a LOT of time to this matter).
+
+**But here come LLMs!**
+
+Thanks to Claude, it actually became possible to develop a template that is HTML readable, easy to maintain, version, share, and deploy, that works on Linux, and remains relatively easy to write, without spending an awful amount of time developing the template (~~let's spend energy and an awful amount of tokens instead!~~).
+
+So here it is, my very personalized Quarto template to make morphing possible between slides and objects, thus keeping my super awesome PowerPoint template while freeing myself from PowerPoint! It's very much developed for my taste, and written in that sense, but having spent the tokens on it, why not open-source it?
+
+Feel free to use it, but note that it's not developed to be the very best template for everyone, but rather to transfer what I was doing in PowerPoint to another framework. So you might ask me to add features, but it would probably be faster to make your own template with Claude or to fork and specialize it! Nonetheless, I'm open to suggestions, and would love to extend the template :)
+
+The remainder of the README is a technical part written by Claude directly, so I leave you with the machine. Have a nice day!
+
+---
+
 # talk: a Quarto reveal.js template
 
 The template serves two goals, one after the other: first, **rebuild a PowerPoint talk in Quarto** so that it looks and clicks the same; then, **keep the deck short and easy to edit by hand**, with every repeated pattern turned into a template feature. New talks are written directly in this second style.
