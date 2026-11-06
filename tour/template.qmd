@@ -98,7 +98,7 @@ Speaker notes (press S).
      short attributes only: upper right, 16 pt, accent colour; a framed PowerPoint-like text
      box (.tb: 18 pt, inner margin) centred, with an accent border. No style= anywhere. -->
 
-- Write Markdown: the default place, size and bullets are those from the original PPT template I was using.
+- Write Markdown: the default place, size and bullets come from the original PPT template I was using.
   - sub-items too
 - Position only what is special:
 
