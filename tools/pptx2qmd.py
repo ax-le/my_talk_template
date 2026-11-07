@@ -768,7 +768,7 @@ class Emitter:
             if a.get("in") is not None and a["out"] >= a["in"]:
                 out = a["out"]
             elif a.get("in") is None and a["out"] == 0:
-                att += " .hidden-start"
+                att += " .fade-after"
             elif a.get("in") is None:
                 att += " .fragment .fade-out data-fragment-index=%d" % a["out"]
         return att, out, a.get("paras", {})
@@ -911,7 +911,7 @@ class Emitter:
             elif d.get("in") is not None:
                 frag_paras[pidx] = ".fragment data-fragment-index=%d" % d["in"]
             elif d.get("out") == 0:
-                frag_paras[pidx] = ".hidden-start"
+                frag_paras[pidx] = ".fade-after"
             elif d.get("out") is not None:
                 frag_paras[pidx] = ".fragment .fade-out data-fragment-index=%d" % d["out"]
         tb = text_body(sp, ctx, frag_paras)

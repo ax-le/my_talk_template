@@ -14,7 +14,7 @@ Both matter; they come in this order: first rebuild, then generalise the code as
 - On his computer, `C:\Users\a23marmo\Desktop\Projects\my_pres_into_quarto\` (Windows, CRLF line endings: compare files ignoring `\r`, write back with CRLF) holds:
   - `my_talk_template/`: the template repository (root = what a deck clones as `_extensions/`: `talk/`, `arrows/`, `tools/`, `tour/template.qmd`, README, AGENTS). Not a Quarto project: it renders nothing by itself.
   - `all_the_pres/`: the decks repository. `phd-defense-quarto/` (the PhD deck: `index.qmd`, `media/`, `refs.bib`, `_quarto.yml`) and `template/` (a deck with no content of its own, whose `_quarto.yml` only lists `_extensions/tour/template.qmd`: render the tour from there). Each deck's `_extensions/` is a git clone of the template (git-ignored). Edit the template in one of these clones and commit/push from `_extensions/` (or edit `my_talk_template/` and `git -C _extensions pull` in the decks); git needs delete permission in the mounted folder (lock files).
-- Rendering: Quarto is not on the desktop VM by default; a tarball install in `$HOME/tools` works there (GitHub reachable), but Quarto's cache fails on the mounted folder: rsync the deck to `$HOME/work/deck` and render there. Headless screenshots: Playwright + `@sparticuz/chromium` (npm) in the VM, `tools/shoot_steps.js` with that executable; view the PNGs by copying them into the deck's `Claude outputs/` and staging them.
+- Rendering: Quarto is not on the desktop VM by default; a tarball install in `$HOME/tools` works there (GitHub reachable), but Quarto's cache fails on the mounted folder: rsync the deck to `$HOME/work/deck` and render there. Headless screenshots: Playwright + `@sparticuz/chromium` (npm) in the VM, `tools/shoot_steps.js` with that executable; view the PNGs by copying them into the deck's `Claude outputs/` and staging them. Faster (2026-11-07): tar the deck (without `.git`, `*_files`, `*.html`) into `my_talk_template/Claude outputs/_snap_<date>.tgz` with device_bash, stage that one file, unpack it in the cloud container, install Quarto there (GitHub reachable from the container) and render/screenshot there with the preinstalled Playwright; write the changed files back with CRLF through device_commit_files.
 - Agent reference: `my_talk_template/AGENTS.md` (mirror in this project: `claude/talk-template-AGENTS.md`) describes the template **as it is**. Read it before any change; update it in place after any change (current state, not a changelog) and refresh the project mirror. `my_talk_template/README.md` is the human guide (Axel's introduction, then the technical part); keep it in sync.
 
 ## Rules for every change
@@ -26,5 +26,6 @@ Both matter; they come in this order: first rebuild, then generalise the code as
 
 ## Open points
 
-- refs.bib: check the co-authors of Mar+22 (filled from memory) and Wu+22.
+- refs.bib was checked against the thesis bibliography on 2026-11-07 (every entry matches; Wu+22 is now the SMC 2022 paper, as in the thesis).
+- media/ciseaux.svg is ciseaux.png traced with potrace; the same path lives in the template (`talk/scissors.lua`, drawn by `[]{.cut}`), so the deck no longer uses the picture.
 - "Barwise autosimilarity": the A(X)₄₅ highlight snapped to column 4, row 5 (`@4,5`); swap it to `@5,4` if the convention is row 4, column 5.

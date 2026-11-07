@@ -814,7 +814,7 @@ local function annotation(d)
   local st, sb = parse_steps(a["steps"] or "0-")
   local o_cls, o_at, i_cls, i_at = step_attrs(st, sb)
   local inner_at = {}
-  for _, k in ipairs({ "to", "pos", "dist", "shift", "x", "y", "arrow", "box", "gap" }) do
+  for _, k in ipairs({ "to", "pos", "dist", "shift", "x", "y", "arrow", "box", "gap", "dir", "anchor" }) do
     if a[k] then inner_at[#inner_at + 1] = { "data-" .. k, a[k] } end
   end
   local style = {}
@@ -833,6 +833,32 @@ local function annotation(d)
   local ocls = { "annot-wrap" }
   for _, c in ipairs(o_cls) do ocls[#ocls + 1] = c end
   return pandoc.Div({ inner }, pandoc.Attr(d.identifier, ocls, o_at))
+end
+
+-- [label]{.edge from=a to=b steps=1- color= width= shift= along=}: an arrow drawn by talk.js from
+-- the edge of the element #a to the edge of #b (graph edges between nodes), its label beside the
+-- middle of the arrow (shift= px to its left, along= px further along it). A div works too.
+local function edge(el)
+  if not has_class(el, "edge") or not el.attributes["to"] then return nil end
+  local a = el.attributes
+  local st, sb = parse_steps(a["steps"] or "0-")
+  local o_cls, o_at, i_cls, i_at = step_attrs(st, sb)
+  local inner_at = {}
+  for _, k in ipairs({ "from", "to", "shift", "along", "width", "head", "gap" }) do
+    if a[k] then inner_at[#inner_at + 1] = { "data-" .. k, a[k] } end
+  end
+  local style = {}
+  if a["color"] then style[#style + 1] = "--annot-c:" .. color_value(a["color"]) end
+  if a["size"] then style[#style + 1] = "--annot-size:" .. css_size(a["size"]) end
+  if #style > 0 then inner_at[#inner_at + 1] = { "style", table.concat(style, ";") } end
+  local icls = { "edge" }
+  for _, c in ipairs(i_cls) do icls[#icls + 1] = c end
+  for _, x in ipairs(i_at) do inner_at[#inner_at + 1] = x end
+  local mk = (el.t == "Span") and pandoc.Span or pandoc.Div
+  local inner = mk({ mk(el.content, pandoc.Attr("", { "edge-label" })) }, pandoc.Attr("", icls, inner_at))
+  local ocls = { "annot-wrap" }
+  for _, c in ipairs(o_cls) do ocls[#ocls + 1] = c end
+  return mk({ inner }, pandoc.Attr(el.identifier, ocls, o_at))
 end
 
 -- ---------------------------------------------------------------------------- 3D tilt
@@ -931,6 +957,28 @@ local function wrap_lists(blocks, maxdepth)
     else out[#out + 1] = b end
   end
   return out
+end
+
+-- - [text]{mark=media/icon.svg mark-size=40}: that picture as the item's marker (the item's
+-- blocks are wrapped in div.marked, the picture inline before the text as img.mark; talk.scss LISTS)
+local function mark_items(list)
+  local changed = false
+  for i, item in ipairs(list.content) do
+    local b = item[1]
+    local sp = b and (b.t == "Plain" or b.t == "Para") and b.content[1]
+    if sp and sp.t == "Span" and sp.attributes["mark"] then
+      -- (a real <img>, not a CSS url(): a url() in a custom property resolves against the stylesheet)
+      local img = pandoc.Image({}, sp.attributes["mark"], "", pandoc.Attr("", { "mark" }))
+      local st = sp.attributes["mark-size"] and ("--mark-size:" .. css_size(sp.attributes["mark-size"])) or nil
+      sp.attributes["mark"], sp.attributes["mark-size"] = nil, nil
+      local blocks = {}
+      for _, x in ipairs(item) do blocks[#blocks + 1] = x end
+      blocks[1].content:insert(1, img)        -- inline, in the first line of the item
+      list.content[i] = { pandoc.Div(blocks, pandoc.Attr("", { "marked" }, st and { { "style", st } } or {})) }
+      changed = true
+    end
+  end
+  if changed then return list end
 end
 
 local function list_div(d)
@@ -1083,6 +1131,13 @@ local function shape(el)
   if kind == "cube" then
     local dp = tostring(a["depth"] or 20):match("[%d%.]+")
     a["style"] = "padding-top:" .. dp .. "px;padding-right:" .. dp .. "px" .. (a["style"] and (";" .. a["style"]) or "")
+    -- for dims(): the depth edge and the front face
+    a["dim-geom"] = "0 " .. dp .. " " .. dp .. " 0"
+    a["dim-inset-top"], a["dim-inset-right"] = dp, dp
+  elseif kind == "parallelogram" then
+    local k = tonumber(tostring(a["slant"] or 25):match("[%d%.]+")) * W / 100
+    a["dim-geom"] = string.format("0 %s %.4g 0", H, k)
+    a["dim-inset-right"] = string.format("%.4g", k)
   end
   for _, k in ipairs({ "shape", "head", "shaft", "taper", "slant", "depth", "background", "border" }) do a[k] = nil end
   el.classes:insert("shape")
@@ -1091,6 +1146,139 @@ local function shape(el)
   if el.t == "Span" then el.content:insert(1, pandoc.RawInline("html", svg))
   else el.content:insert(1, pandoc.RawBlock("html", svg)) end
   return el
+end
+
+-- ---------------------------------------------------------------------------- stacks
+-- stack="c1 c2 … cn" on a box: n slices of the box's size, the first one in front (the box
+-- itself: its background becomes the first colour), the others shifted behind it, up to
+-- depth= px to the right and lift= px up (default 0.85 × depth), like a stack of matrices.
+-- stack-id=PREFIX gives the slices data-id PREFIX-1 … PREFIX-n (Morph from grid cells, cell-id=).
+local function stack(el)
+  local a = el.attributes
+  if not a["stack"] then return nil end
+  local colors = {}
+  for c in tostring(a["stack"]):gmatch("%S+") do colors[#colors + 1] = c end
+  local n = #colors
+  local depth = tonumber(tostring(a["depth"] or "20"):match("[%d%.]+")) or 20
+  local lift = tonumber(tostring(a["lift"] or ""):match("[%d%.]+")) or depth * 0.85
+  local prefix = a["stack-id"]
+  a["stack"], a["stack-id"], a["lift"] = nil, nil, nil
+  a["depth"] = nil
+  -- dims drawn by dims(): the depth arrow runs from the front slice's corner to the back one
+  a["dim-geom"] = string.format("0 0 %.4g %.4g", depth, -lift)
+  local mk = (el.t == "Span") and pandoc.Span or pandoc.Div
+  -- the slices draw the frame (the box's own border is dropped, talk.scss: it would show at its
+  -- final place while the slices morph in)
+  local border = a["border"] and a["border"]:gsub("(%a+)", function(w) return THEME[w] and ("var(" .. THEME[w] .. ")") or nil end)
+                 or (has_class(el, "matrix") or has_class(el, "box")) and "1px solid #000" or "none"
+  a["border"] = nil
+  local slices = {}
+  for k = n, 1, -1 do                       -- back to front: the DOM order paints them so
+    local f = (n > 1) and (k - 1) / (n - 1) or 0
+    local attrs = { { "style", string.format("left:%.4gpx;top:%.4gpx;background:%s;border:%s", f * depth, -f * lift, color_value(colors[k]), border) } }
+    if prefix then attrs[#attrs + 1] = { "data-id", prefix .. "-" .. k } end
+    slices[#slices + 1] = mk({}, pandoc.Attr("", { "slice" }, attrs))
+  end
+  local content = {}
+  for _, x in ipairs(slices) do content[#content + 1] = x end
+  for _, x in ipairs(el.content) do content[#content + 1] = x end
+  el.content = (el.t == "Span") and pandoc.Inlines(content) or pandoc.Blocks(content)
+  el.classes:insert("stacked")
+  return el
+end
+
+-- ---------------------------------------------------------------------------- dimension arrows
+-- dim-left="f" dim-bottom="t" dim-top=… dim-right=… dim-depth="b" on any box (.matrix, .box, a
+-- cube or parallelogram shape, a stack): an arrow along that side, 14 px outside the box, with
+-- its label (maths: `r_t` is read as $r_t$; Markdown with $…$ or text otherwise) beyond it.
+-- On a cube the left and bottom arrows follow the front face and the depth arrow the top-left
+-- edge; on a parallelogram the depth arrow follows the slanted left side; on a stack it goes
+-- from the front slice to the back one. (dim-geom = "x0 y0 x1 y1": the depth edge, set by
+-- shape() / stack(), in px of the box.)
+local function dim_label(v)
+  if v:find("$", 1, true) then return pandoc.read(v, "markdown").blocks[1].content end
+  return pandoc.Inlines({ pandoc.Math("InlineMath", v) })
+end
+local function dims(el)
+  local a = el.attributes
+  local any = false
+  for _, side in ipairs({ "left", "right", "top", "bottom", "depth" }) do if a["dim-" .. side] then any = true end end
+  if not any then a["dim-geom"] = nil; return nil end
+  local mk = (el.t == "Span") and pandoc.Span or pandoc.Div
+  local W, H = px_number(a["width"]) or 100, px_number(a["height"]) or 100
+  local geom = {}
+  for v in tostring(a["dim-geom"] or ""):gmatch("%S+") do geom[#geom + 1] = tonumber(v) end
+  local st = {}
+  -- insets of the left / bottom arrows: the front face of a cube, the bottom side of a parallelogram
+  if a["dim-inset-top"] then st[#st + 1] = "--dim-inset-top:" .. css_size(a["dim-inset-top"]) end
+  if a["dim-inset-right"] then st[#st + 1] = "--dim-inset-right:" .. css_size(a["dim-inset-right"]) end
+  a["dim-geom"], a["dim-inset-top"], a["dim-inset-right"] = nil, nil, nil
+  local gap = tonumber(a["dim-gap"] or "14") or 14; a["dim-gap"] = nil
+  st[#st + 1] = "--dim-gap:" .. gap .. "px"
+  if a["dim-size"] then st[#st + 1] = "--dim-size:calc(" .. a["dim-size"] .. " * var(--talk-pt))"; a["dim-size"] = nil end
+  local added = {}
+  for _, side in ipairs({ "left", "right", "top", "bottom", "depth" }) do
+    local v = a["dim-" .. side]
+    if v then
+      a["dim-" .. side] = nil
+      local attrs = {}
+      if side == "depth" then
+        local x0, y0, x1, y1 = geom[1] or 0, geom[2] or H, geom[3] or W, geom[4] or 0
+        local dx, dy = x1 - x0, y1 - y0
+        local L = math.sqrt(dx * dx + dy * dy)
+        local ang = math.deg(math.atan(dy, dx))
+        -- the arrow is moved `gap` px away from the edge, on its outer (upper-left) side
+        local nx, ny = dy / L, -dx / L
+        if nx + ny > 0 then nx, ny = -nx, -ny end
+        attrs[#attrs + 1] = { "style", string.format("left:%.4gpx;top:%.4gpx;width:%.4gpx;transform:rotate(%.4gdeg);--dim-angle:%.4gdeg",
+          x0 + gap * nx, y0 + gap * ny, L, ang, -ang) }
+      end
+      local label = dim_label(v)
+      if el.t ~= "Span" then label = { pandoc.Plain(label) } end
+      added[#added + 1] = mk({ mk({}, pandoc.Attr("", { "dim-arrow" })), mk(label, pandoc.Attr("", { "dim-label" })) },
+        pandoc.Attr("", { "dim", "dim-" .. side }, attrs))
+    end
+  end
+  local content = {}
+  for _, x in ipairs(el.content) do content[#content + 1] = x end
+  for _, x in ipairs(added) do content[#content + 1] = x end
+  el.content = (el.t == "Span") and pandoc.Inlines(content) or pandoc.Blocks(content)
+  if #st > 0 then a["style"] = table.concat(st, ";") .. (a["style"] and (";" .. a["style"]) or "") end
+  return el
+end
+
+-- ---------------------------------------------------------------------------- rotated content
+-- .rot-l / .rot-r on a box: its content is turned by a quarter turn (left: read bottom-up),
+-- still centred in the box (the box and its border stay as they are): labels of column vectors
+local function rot(el)
+  if not (has_class(el, "rot-l") or has_class(el, "rot-r")) then return nil end
+  local mk = (el.t == "Span") and pandoc.Span or pandoc.Div
+  local inner = {}
+  for _, x in ipairs(el.content) do inner[#inner + 1] = x end
+  if el.t == "Span" then el.content = pandoc.Inlines({ pandoc.Span(inner, pandoc.Attr("", { "rot" })) })
+  else el.content = pandoc.Blocks({ pandoc.Div(inner, pandoc.Attr("", { "rot" })) }) end
+  return el
+end
+
+-- ---------------------------------------------------------------------------- cards
+-- ::: {.card}  ### Title  body…  ::: {.card-foot} … :::  :::  — a titled box: the title in the
+-- PowerPoint shape style (.filled), the body framed under it (text centred vertically), an
+-- optional footer at the bottom. Works alone (.absolute, width= height=) or as a column
+-- (::: {.column .card}: the cards of a row share the row's height).
+local function card(d)
+  if not has_class(d, "card") then return nil end
+  local title, body, foot = nil, {}, nil
+  for i, b in ipairs(d.content) do
+    if i == 1 and b.t == "Header" then title = b.content
+    elseif b.t == "Div" and has_class(b, "card-foot") then foot = b
+    else body[#body + 1] = b end
+  end
+  local out = {}
+  if title then out[#out + 1] = pandoc.Div({ pandoc.Plain(title) }, pandoc.Attr("", { "card-title" })) end
+  out[#out + 1] = pandoc.Div(body, pandoc.Attr("", { "card-body" }))
+  if foot then out[#out + 1] = foot end
+  d.content = (d.t == "Span") and pandoc.Inlines(out) or pandoc.Blocks(out)
+  return d
 end
 
 -- ---------------------------------------------------------------------------- mermaid diagrams
@@ -1103,14 +1291,46 @@ local function mermaid_maths(r)
   return r
 end
 
+local function line_spec(spec, a)
+  local w, c = "1px", "currentColor"
+  local src = (spec == "true") and (a["border"] or (a["style"] or ""):match("border:%s*([^;]+)") or "") or spec
+  for tok in tostring(src):gmatch("%S+") do
+    if tok:match("^[%d%.]+px$") or tok:match("^[%d%.]+$") then w = css_size(tok)
+    elseif tok ~= "solid" and tok ~= "dashed" and tok ~= "dotted" then c = theme_color(tok) end
+  end
+  return w, c
+end
+
 local function box_attrs(el)
   local a, st = el.attributes, {}
+  if has_class(el, "annot") or has_class(el, "edge") then return nil end   -- their own attributes (annotation, edge)
+  -- .sep: a separator line. Its length is width= (horizontal) or height= (vertical), its
+  -- thickness thickness= (1 px), its colour color= (black), dash="12 8" for a dashed one; any
+  -- position, click or class as usual
+  if has_class(el, "sep") then
+    local th = css_size(a["thickness"] or "1"); a["thickness"] = nil
+    local vertical = a["height"] and not a["width"]
+    if vertical then a["width"] = th elseif a["width"] and not a["height"] then a["height"] = th end
+    if a["color"] then a["background"] = a["color"]; a["color"] = nil end
+    if a["dash"] then                                -- dash="12 8": dashes of 12 px, gaps of 8 px
+      local d, g = tostring(a["dash"]):match("([%d%.]+)%s+([%d%.]+)")
+      d, g = d or a["dash"], g or d or a["dash"]
+      local c = theme_color(a["background"] or "black")
+      st[#st + 1] = string.format("background:repeating-linear-gradient(to %s, %s 0 %spx, transparent %spx %spx)",
+        vertical and "bottom" or "right", c, d, d, tonumber(d) + tonumber(g))
+      a["background"], a["dash"] = nil, nil
+    end
+  end
   if has_class(el, "absolute") then
     for _, k in ipairs(POS) do
       if a[k] then st[#st + 1] = k .. ":" .. css_size(a[k]); a[k] = nil end
     end
-  elseif el.t == "Span" then                    -- e.g. the shapes of a .flow row
+  elseif el.t == "Span" or has_class(el, "card") or has_class(el, "sep") then   -- e.g. the shapes of a .flow row
     for _, k in ipairs({ "width", "height" }) do
+      if a[k] then st[#st + 1] = k .. ":" .. css_size(a[k]); a[k] = nil end
+    end
+  elseif has_class(el, "column") and a["height"] then   -- (with a height, the width goes in the same style=:
+    for _, k in ipairs({ "width", "height" }) do          --  Quarto would otherwise add a second one)
       if a[k] then st[#st + 1] = k .. ":" .. css_size(a[k]); a[k] = nil end
     end
   end
@@ -1119,6 +1339,36 @@ local function box_attrs(el)
   end
   if a["gap"] and has_class(el, "flow") then st[#st + 1] = "--flow-gap:" .. css_size(a["gap"]); a["gap"] = nil end
   if a["gap"] and has_class(el, "columns") then st[#st + 1] = "--talk-col-gap:" .. css_size(a["gap"]); a["gap"] = nil end
+  -- lines=true | "2px accent" on .columns: a vertical line in the middle of each gap
+  if a["lines"] and has_class(el, "columns") then
+    local w, c = line_spec(a["lines"] == "true" and "1px black" or a["lines"], a)
+    st[#st + 1] = "--talk-col-line-w:" .. w .. ";--talk-col-line-c:" .. c; a["lines"] = nil
+    el.classes:insert("col-lines")
+  end
+  -- audio-col="x1 x2 …" on a box holding a list: the speaker icons of each item ({{< audio >}} or
+  -- .audio-btn spans) are aligned in columns, x px from the left edge of the box
+  if a["audio-col"] then
+    local n = 0
+    for x in tostring(a["audio-col"]):gmatch("%S+") do n = n + 1; st[#st + 1] = "--audio-col" .. n .. ":" .. css_size(x) end
+    a["audio-col"] = nil
+    el.classes:insert("audio-cols")
+  end
+  if a["opacity"] then st[#st + 1] = "opacity:" .. a["opacity"]; a["opacity"] = nil end
+  -- indent="80 120": left edge of the text of level-1 items / of deeper levels, in px (hanging markers)
+  if a["indent"] then
+    local v = {}
+    for x in tostring(a["indent"]):gmatch("[%d%.]+") do v[#v + 1] = tonumber(x) end
+    local prev = 0
+    for n = 1, 5 do
+      local m = v[n == 1 and 1 or math.min(2, #v)]
+      if m then
+        local mar = (n == 1) and m or (prev + m)
+        st[#st + 1] = string.format("--talk-mar%d:%gpx;--talk-ind%d:%gpx", n, mar, n, -m)
+        prev = mar
+      end
+    end
+    a["indent"] = nil
+  end
   -- spacing="10 5": space before the items of a list, in pt (PowerPoint "space before"):
   -- first value for level-1 items, second for deeper levels (one value: every level)
   if a["spacing"] then
@@ -1157,19 +1407,16 @@ end
 --   cols / rows : a number of equal cells, or relative sizes ("2 2 1 1"); default 1
 --   lines       : true (the box's border width and colour) or "2px accent": lines between cells
 --   hl          : highlights of cells, addressed as in any hl= (k, k-l, c,r, *), at clicks
-local function line_spec(spec, a)
-  local w, c = "1px", "currentColor"
-  local src = (spec == "true") and (a["border"] or (a["style"] or ""):match("border:%s*([^;]+)") or "") or spec
-  for tok in tostring(src):gmatch("%S+") do
-    if tok:match("^[%d%.]+px$") or tok:match("^[%d%.]+$") then w = css_size(tok)
-    elseif tok ~= "solid" and tok ~= "dashed" and tok ~= "dotted" then c = theme_color(tok) end
-  end
-  return w, c
-end
+--   cells       : "c1 c2 …": background colour of each cell, row by row (palette names or CSS)
+--   cell-id     : PREFIX: every cell gets data-id PREFIX-k (a Morph of each cell: e.g. the cells
+--                 of a matrix fly into the slices of a stack= box with stack-id=PREFIX)
 
 local function grid_box(d)
   local a = d.attributes
   if not (a["cols"] or a["rows"]) then return nil end
+  -- a span box ([]{.absolute .matrix rows=6 lines=true}) gets span cells and lines
+  local mk = (d.t == "Span") and pandoc.Span or pandoc.Div
+  if d.t == "Span" and not a["lines"] and not a["cells"] and not a["cell-id"] then return nil end   -- hl= alone: hl_host reads cols/rows
   local cols, rows = a["cols"] or "1", a["rows"] or "1"
   -- when the box size is known, the cell boundaries are rounded to whole pixels of its inner
   -- area (size − 2 × border): cells, highlights and lines then share exactly the same edges
@@ -1189,13 +1436,29 @@ local function grid_box(d)
   a["cols"], a["rows"] = nil, nil
   d.classes:insert("grid-box")
   local out = {}
+  -- cells="c1 c2 …" (backgrounds, row by row) and cell-id=PREFIX (data-id PREFIX-k): cells
+  -- that do not come from a list are created empty
+  local cell_bg, cell_id, ncell = {}, a["cell-id"], 0
+  for c in tostring(a["cells"] or ""):gmatch("%S+") do cell_bg[#cell_bg + 1] = c end
+  a["cells"], a["cell-id"] = nil, nil
+  local function cell(i, id, cls, attrs, content)
+    local c = (i - 1) % g.nc + 1
+    local r = (i - 1) // g.nc + 1
+    if r > g.nr then return end
+    local st = "left:" .. pct(g.xs[c]) .. ";top:" .. pct(g.ys[r]) ..
+               ";width:" .. pct(g.xs[c + 1] - g.xs[c]) .. ";height:" .. pct(g.ys[r + 1] - g.ys[r])
+    if cell_bg[i] then st = st .. ";background:" .. color_value(cell_bg[i]) end
+    if cell_id then attrs[#attrs + 1] = { "data-id", cell_id .. "-" .. i } end
+    local merged = false
+    for _, kv in ipairs(attrs) do if kv[1] == "style" then kv[2] = st .. ";" .. kv[2]; merged = true end end
+    if not merged then attrs[#attrs + 1] = { "style", st } end
+    ncell = i
+    out[#out + 1] = mk(content, pandoc.Attr(id, cls, attrs))
+  end
   -- cells from the list (row by row)
   for _, b in ipairs(d.content) do
     if b.t == "BulletList" or b.t == "OrderedList" then
       for i, item in ipairs(b.content) do
-        local c = (i - 1) % g.nc + 1
-        local r = (i - 1) // g.nc + 1
-        if r > g.nr then break end
         local id, cls, attrs, content = "", { "seg" }, {}, nil
         local one = #item == 1 and (item[1].t == "Plain" or item[1].t == "Para") and item[1].content or nil
         if one then
@@ -1209,17 +1472,14 @@ local function grid_box(d)
             content = { pandoc.Plain(sp.content) }
           end
         end
-        content = content or item
-        local st = "left:" .. pct(g.xs[c]) .. ";top:" .. pct(g.ys[r]) ..
-                   ";width:" .. pct(g.xs[c + 1] - g.xs[c]) .. ";height:" .. pct(g.ys[r + 1] - g.ys[r])
-        local merged = false
-        for _, kv in ipairs(attrs) do if kv[1] == "style" then kv[2] = st .. ";" .. kv[2]; merged = true end end
-        if not merged then attrs[#attrs + 1] = { "style", st } end
-        out[#out + 1] = pandoc.Div(content, pandoc.Attr(id, cls, attrs))
+        cell(i, id, cls, attrs, content or item)
       end
     else
       out[#out + 1] = b
     end
+  end
+  if ncell == 0 and (#cell_bg > 0 or cell_id) then
+    for i = 1, g.nc * g.nr do cell(i, "", { "seg" }, {}, {}) end
   end
   -- lines between cells (separate elements: they stay when a cell appears on a click, and they
   -- are drawn above the highlights; the outer border is the box's own border)
@@ -1237,11 +1497,11 @@ local function grid_box(d)
       return "calc(" .. pct(p) .. " - " .. w .. " / 2)"
     end
     for k = 2, g.nc do
-      out[#out + 1] = pandoc.Div({}, pandoc.Attr("", { "grid-line" }, { { "style",
+      out[#out + 1] = mk({}, pandoc.Attr("", { "grid-line" }, { { "style",
         "left:" .. at(g.xs[k], W) .. ";top:0;bottom:0;width:" .. w .. ";background:" .. c } }))
     end
     for k = 2, g.nr do
-      out[#out + 1] = pandoc.Div({}, pandoc.Attr("", { "grid-line" }, { { "style",
+      out[#out + 1] = mk({}, pandoc.Attr("", { "grid-line" }, { { "style",
         "top:" .. at(g.ys[k], H) .. ";left:0;right:0;height:" .. w .. ";background:" .. c } }))
     end
   end
@@ -1250,8 +1510,11 @@ local function grid_box(d)
   if a["hl"] then
     a["grid-cols"], a["grid-rows"] = cols, rows
     if W and H then a["grid-inner"] = (W - 2 * bw) .. " " .. (H - 2 * bw) end
+    -- the border is painted again above the highlights (talk.scss .hl-gridded::after), so a
+    -- fill scaled to a fraction of a pixel never shows over it
+    if bw > 0 then a["style"] = "--hl-bw:" .. bw .. "px" .. (a["style"] and (";" .. a["style"]) or "") end
   end
-  d.content = out
+  d.content = (d.t == "Span") and pandoc.Inlines(out) or pandoc.Blocks(out)
   return d
 end
 
@@ -1472,6 +1735,7 @@ local function fill_refs(blocks, doc)
     for _, e in ipairs(entries_for(keys)) do ents[#ents + 1] = e end
     -- keep the anchors ref-<key> so that citations still link to their entry
     for j, k in ipairs(keys) do if ents[j] then ents[j].identifier = "ref-" .. k end end
+    -- (entries that do not fit the slide continue on copies of it: talk.js module 7)
     return pandoc.Div(ents, pandoc.Attr("talk-refs", { "references", "talk-references" }))
   end })
   if found then doc.meta["suppress-bibliography"] = true end
@@ -1689,14 +1953,17 @@ function Pandoc(doc)
   local blocks = pandoc.Blocks(title_slides(doc, doc.blocks, m["title-slide"]))
   blocks = fullcites(blocks)
   blocks = blocks:walk({ Div = static_block })
-  blocks = blocks:walk({ Div = function(d) local r = grid_box(d) or list_div(d) or d; r = shape(r) or r; return box_attrs(r) or r end,
+  blocks = blocks:walk({ Div = function(d) local r = grid_box(d) or list_div(d) or card(d) or d
+                           r = rot(r) or r; r = stack(r) or r; r = shape(r) or r; r = dims(r) or r
+                           return box_attrs(r) or r end,
                          Span = function(sp)
                            local trigger = audio_play(sp)
-                           local r = audio_icon(sp) or sp; r = shape(r) or r; r = box_attrs(r) or r
+                           local r = grid_box(sp) or audio_icon(sp) or sp
+                           r = rot(r) or r; r = stack(r) or r; r = shape(r) or r; r = dims(r) or r; r = box_attrs(r) or r
                            if trigger then return { r, trigger } end
                            return r
                          end,
-                         RawBlock = mermaid_maths, Header = title_attrs,
+                         RawBlock = mermaid_maths, Header = title_attrs, BulletList = mark_items,
                          Para = function(pa)        -- a paragraph holding only &nbsp;: an empty line
                            if #pa.content == 1 and pa.content[1].t == "Str" and pa.content[1].text == "\u{a0}" then
                              return pandoc.Div({}, pandoc.Attr("", { "empty-line" })) end end })
@@ -1706,12 +1973,16 @@ function Pandoc(doc)
   blocks = fill_refs(blocks, doc)
   blocks = blocks:walk({ Image = highlight_image, Div = highlight_div, Span = highlight_span })
   blocks = blocks:walk({ Math = highlight_math })
-  blocks = blocks:walk({ Div = annotation })
+  blocks = blocks:walk({ Div = function(d) return annotation(d) or edge(d) end, Span = edge })
   if m.highlight then
     local hv = {}
     if m.highlight.color then hv[#hv + 1] = "--talk-hl:" .. stringify(m.highlight.color) end
     if m.highlight.opacity then hv[#hv + 1] = "--talk-hl-opacity:" .. stringify(m.highlight.opacity) end
-    for k, v in pairs(m.highlight.colors or {}) do hv[#hv + 1] = "--hl-" .. k .. ":" .. stringify(v) end
+    for k, v in pairs(m.highlight.colors or {}) do         -- a value may be another name: shade6: dark
+      local c = stringify(v)
+      if c:match("^%a[%w%-]*$") then c = color_value(c) end
+      hv[#hv + 1] = "--hl-" .. k .. ":" .. c
+    end
     if #hv > 0 then quarto.doc.include_text("in-header", "<style>html:root{" .. table.concat(hv, ";") .. "}</style>") end
   end
   blocks = blocks:walk({ Image = tilt, Div = tilt, Span = tilt })

@@ -186,6 +186,25 @@ $mermaid-label-fg-color: $navy;     // node and edge text
     .reveal .b-#{$name}#{$l} { --talk-b#{$l + 1}: "#{$char}"; --talk-b#{$l + 1}-size: #{$size}; }
   }
 }
+// ✓ / ✗ items: `- [text]{.yes}` / `- [text]{.no}` (a green check, a red cross as the marker);
+// whole lists: .b-check / .b-cross
+.reveal .b-cross { @for $l from 1 through 5 { --talk-b#{$l}: "✘"; --talk-b#{$l}-size: 1; } }
+.reveal .slides li:has(> .yes), .reveal .slides li:has(> p > .yes) { --mk: "✔"; --mks: 1.4; --talk-bullet-color: var(--talk-yes); }
+.reveal .slides li:has(> .no), .reveal .slides li:has(> p > .no) { --mk: "✘"; --mks: 1.4; --talk-bullet-color: var(--talk-no); }
+.reveal .slides li:has(> .yes)::before, .reveal .slides li:has(> p > .yes)::before,
+.reveal .slides li:has(> .no)::before, .reveal .slides li:has(> p > .no)::before { font-weight: 700; }
+// - [text]{mark=icon.svg mark-size=40}: a picture as the marker (talk.lua mark_items wraps the
+// item in div.marked); centred on the first line, hanging at the marker's place
+.reveal .slides li:has(> .marked)::before { content: none; }
+.reveal .slides li > .marked { position: relative; }
+// the picture hangs in the indent like a text marker (no advance: negative right margin) and
+// does not push the lines apart (negative top / bottom margins), centred on the first line
+.reveal .slides li > .marked img.mark {
+  display: inline-block; vertical-align: middle; max-width: none; object-fit: contain;
+  width: var(--mark-size, 1.4em); height: var(--mark-size, 1.4em);
+  margin: calc((1.15em - var(--mark-size, 1.4em)) / 2) calc(-1 * var(--i) - var(--mark-size, 1.4em)) calc((1.15em - var(--mark-size, 1.4em)) / 2) var(--i);
+}
+.reveal .slides li > .marked > p { margin: 0; }
 // no markers and no hanging indent at all
 .reveal .no-bullets {
   --talk-mar1: 0px; --talk-mar2: 1.6em; --talk-mar3: 3.2em; --talk-mar4: 4.8em; --talk-mar5: 6.4em;
@@ -231,7 +250,12 @@ $mermaid-label-fg-color: $navy;     // node and edge text
 // keep inline equations on one line, like PowerPoint
 .reveal .tb .katex { white-space: nowrap; }
 .reveal .tb .katex-display { margin: 0.1em 0; }
-.reveal .hidden-start { visibility: hidden !important; }
+// .fade-after: shown when the slide arrives, fades out by itself once the slide is in place
+// (after the push, --talk-push-duration; or fade-delay=S on the element)
+.reveal .slides section.present .fade-after {
+  animation: talk-fade-after .6s ease-in-out forwards; animation-delay: var(--talk-fade-delay, var(--talk-push-duration, .8s));
+}
+@keyframes talk-fade-after { to { opacity: 0; } }
 
 // ============================================================================
 //  THEME COLOURS as CSS variables — change them in YAML:
@@ -383,7 +407,7 @@ $mermaid-label-fg-color: $navy;     // node and edge text
 //  CITATIONS  (bibliography: refs.bib   +   [@key]   +   ::: {#refs} :::)
 // ============================================================================
 .reveal .slides section .slide-refs {
-  position: absolute; left: 96px; right: 140px; bottom: 6px; margin: 0; z-index: 5;
+  position: absolute; left: 96px; right: 80px; bottom: 6px; margin: 0; z-index: 5;   // (the slide number sits right of 1200 px)
   font-size: 11px; line-height: 1.25; color: #333; text-align: left;
 }
 .reveal .talk-sec .slide-refs { left: calc(var(--sec-panel-width) + 40px); }
@@ -409,6 +433,8 @@ $mermaid-label-fg-color: $navy;     // node and edge text
   // named highlight colours, usable as  hl="2 teal"  or  \hl{2}{teal}{…}  (extend in YAML: talk: highlight: colors)
   --hl-red: #C00000; --hl-teal: #69A1AB; --hl-gold: #F2C418; --hl-orange: #DC9528;
   --hl-purple: #9A5D78; --hl-green: #4A845E; --hl-brown: #87492C; --hl-navy: #1A2E40; --hl-black: #000;
+  --hl-lime: #93E159; --hl-cyan: #00FFFF;
+  --talk-yes: #00B050; --talk-no: var(--hl-red);   // the ✓ / ✗ list markers (.yes / .no items)
 }
 .reveal .hl-host { --hl-c: var(--hl-color, var(--talk-hl)); }
 .reveal .hl-host:not(.absolute):not(.tilt) { position: relative; }
@@ -432,8 +458,18 @@ $mermaid-label-fg-color: $navy;     // node and edge text
 // grid highlights (talk.lua hl_host): the layer is transparent, the cells opaque and exactly on
 // the pixel grid of the box; a cell grows 1 px (--hl-dx/--hl-dy, set by hl_regions) only under a
 // neighbouring cell shown at the same time, so touching cells never show a seam at any zoom
-.reveal .hl-layer { position: absolute; inset: 0; display: block; pointer-events: none; opacity: var(--hl-opacity, var(--talk-hl-opacity)); }
+.reveal .hl-layer { position: absolute; inset: 0; display: block; pointer-events: none; opacity: var(--hl-opacity, var(--talk-hl-opacity)); clip-path: inset(0); }   // (clipped to the box, whatever the rounding)
 .reveal .hl-under > .hl-layer { z-index: -1; }
+// in a box with grid lines the layer goes ABOVE the lines, the text and the border, and multiplies
+// with them (a highlighter pen): black stays black, so no red fringe ever shows along a line or the
+// frame at a fractional zoom (the lines' antialiased edges used to blend with the red under them)
+.reveal .grid-box.hl-under:has(> .grid-line) > .hl-layer { z-index: 3; mix-blend-mode: multiply; }
+// a gridded box with a border (--hl-bw, talk.lua grid_box): the border is painted again above the
+// cells, so a fill rounded to a fraction of a pixel never shows over it at any zoom
+.reveal .hl-under.hl-gridded[style*="--hl-bw"]::after {
+  content: ""; position: absolute; inset: calc(-1 * var(--hl-bw)); border: inherit; border-radius: inherit;
+  pointer-events: none; z-index: 3;
+}
 .reveal .hl-layer .hl-fill { inset: 0 calc(-1 * var(--hl-dx, 0px)) calc(-1 * var(--hl-dy, 0px)) 0; }
 .reveal .hl-layer .hl-fill::before { opacity: 1; }
 .reveal .hl-outline .hl-fill::before { background: none; opacity: 1; box-shadow: inset 0 0 0 3px var(--hl-c); }
@@ -541,10 +577,10 @@ $mermaid-label-fg-color: $navy;     // node and edge text
   padding: 0 2px; line-height: 1.1; overflow: hidden; white-space: nowrap;
 }
 .reveal .slides .grid-box > .seg > p { margin: 0; }
-.reveal .slides .grid-box > .grid-line { position: absolute; z-index: 2; pointer-events: none; }
+.reveal .slides .grid-box > .grid-line { position: absolute; z-index: 2; pointer-events: none; display: block; }
 
 // delayed appearance ({.fragment delay=3.9}, talk.js module 6): only on the way in
-.reveal .slides .fragment.visible[data-delay] { transition-delay: var(--talk-delay, 0s); }
+.reveal .slides .fragment.visible[data-delay] { transition-delay: var(--talk-delay, 0s); }   // (talk.js resets --talk-delay once shown)
 // delay=end: shown at its click, invisible until the sound of that click ends (talk.js, audio)
 .reveal .slides .fragment.visible.talk-waiting { opacity: 0; visibility: hidden; transition-delay: 0s; }
 
@@ -650,6 +686,17 @@ $ph: "calc(100% + 2 * var(--sec-bleed-x))";
 .reveal .slides div.columns { display: flex; align-items: flex-start; gap: var(--talk-col-gap, 40px); }
 .reveal .slides div.columns > .column { display: block; flex: 0 1 auto; min-width: 0; vertical-align: top; }
 .reveal .slides div.columns > .column > :not(ul, ol) { margin-left: 0; margin-right: 0; }
+// a column with height= and .va-ctr / .va-b / .va-spread: its blocks centred, at the bottom, or spread evenly
+.reveal .slides div.columns > .column:is(.va-ctr, .va-b, .va-spread) { display: flex; flex-direction: column; }
+.reveal .slides div.columns > .column.va-ctr { justify-content: center; }
+.reveal .slides div.columns > .column.va-b { justify-content: flex-end; }
+.reveal .slides div.columns > .column.va-spread { justify-content: space-evenly; }
+// lines=true | "2px accent" on .columns: a vertical line in the middle of each gap
+.reveal .slides div.columns.col-lines > .column { position: relative; }
+.reveal .slides div.columns.col-lines > .column + .column::before {
+  content: ""; position: absolute; top: 0; bottom: 0; width: var(--talk-col-line-w, 1px);
+  left: calc(-1 * (var(--talk-col-gap, 40px) + var(--talk-col-line-w, 1px)) / 2); background: var(--talk-col-line-c, #000);
+}
 
 // ============================================================================
 //  DIAGRAMS — a ```{mermaid}``` chart inside a positioned box fills the box
@@ -663,12 +710,12 @@ $ph: "calc(100% + 2 * var(--sec-bleed-x))";
 // ============================================================================
 //  FLOW — a horizontal block diagram drawn by the layout, not by hand:
 //    ::: {.absolute .flow left= top= width= height=}
-//    [$X$]{.box width=42 height=100% dim="ft"} [Encoder]{shape=shrink width=113 height=100% taper=25%}
-//    $\xrightarrow{a()}$ [$\hat X$]{.box width=42 height=100% dim="ft" .dim-right}
+//    [$X$]{.box width=42 height=100% dim-left="ft"} [Encoder]{shape=shrink width=113 height=100% taper=25%}
+//    $\xrightarrow{a()}$ [$\hat X$]{.box width=42 height=100% dim-right="ft"}
 //    :::
 //  The items sit in one row, centred vertically, in source order, touching (add gap= in px).
-//  .box: framed box · shape=shrink / grow…: any shape (see SHAPES) · dim="ft": dimension arrow
-//  along the left side (.dim-right: right side) · anything else (maths, text) is a plain item.
+//  .box: framed box · shape=shrink / grow…: any shape (see SHAPES) · dim-left="ft": dimension arrow
+//  along the left side (dim-right: right side, see DIMENSION ARROWS) · anything else (maths, text) is a plain item.
 // ============================================================================
 .reveal .flow { color: var(--talk-box-text, #000); }
 .reveal .flow > p { display: flex; align-items: center; height: 100%; margin: 0; gap: var(--flow-gap, 0px); }
@@ -676,18 +723,70 @@ $ph: "calc(100% + 2 * var(--sec-bleed-x))";
   position: relative; box-sizing: border-box; flex: none;
   display: block; align-content: unsafe center; text-align: center; line-height: 1.1;   // content centred both ways
 }
-// dimension: an upward arrow 14 px off the box side, its label (maths italic) beyond it
-.reveal .flow [data-dim]::before, .reveal .flow [data-dim]::after { position: absolute; top: 0; bottom: 0; }
-.reveal .flow [data-dim]::after {
-  content: ""; width: 7px; right: calc(100% + 11px); background: #000;
+
+// ============================================================================
+//  DIMENSION ARROWS — dim-left="f" dim-bottom="t" dim-top= dim-right= dim-depth="b" on any box
+//  (talk.lua dims(): one span.dim per side, holding the arrow and the label). The arrow runs
+//  along the side, --dim-gap (14 px) outside the box; the label sits beyond it. On a cube the
+//  left / bottom arrows follow the front face (--dim-inset-top/-right), the depth one the top
+//  left edge (placed and rotated by the filter).
+// ============================================================================
+.reveal .slides section .dim { position: absolute; display: block; pointer-events: none; margin: 0; z-index: 1; }
+.reveal .slides section .dim > .dim-arrow { position: absolute; display: block; background: #000; }
+.reveal .slides section .dim > .dim-label {
+  position: absolute; display: block; white-space: nowrap; line-height: 1; color: var(--talk-box-text, #000);
+  font-size: var(--dim-size, calc(18 * var(--talk-pt)));   // dim-size= (pt); not the box's own size
+}
+.reveal .slides section .dim > .dim-label p { margin: 0; }
+.reveal .slides section .dim > .dim-label .katex { white-space: nowrap; }
+// vertical arrow (pointing up): 7 px wide, the shaft 1 px
+.reveal .slides section :is(.dim-left, .dim-right) { top: var(--dim-inset-top, 0px); bottom: 0; width: 7px; }
+.reveal .slides section :is(.dim-left, .dim-right) > .dim-arrow {
+  inset: 0;
   clip-path: polygon(50% 0, 100% 7px, calc(50% + 0.5px) 7px, calc(50% + 0.5px) 100%, calc(50% - 0.5px) 100%, calc(50% - 0.5px) 7px, 0 7px);
 }
-.reveal .flow [data-dim]::before {
-  content: attr(data-dim); right: calc(100% + 30px); display: flex; align-items: center;
-  font-family: KaTeX_Math, serif; font-style: italic; font-size: 1.21em;
+.reveal .slides section .dim-left { right: calc(100% + var(--dim-gap, 14px) - 3.5px); }
+.reveal .slides section .dim-right { left: calc(100% + var(--dim-gap, 14px) - 3.5px); }
+.reveal .slides section :is(.dim-left, .dim-right) > .dim-label { top: 50%; transform: translateY(-50%); }
+.reveal .slides section .dim-left > .dim-label { right: calc(100% + 3px); }
+.reveal .slides section .dim-right > .dim-label { left: calc(100% + 3px); }
+// horizontal arrow (pointing right)
+.reveal .slides section :is(.dim-top, .dim-bottom, .dim-depth) { left: 0; right: var(--dim-inset-right, 0px); height: 7px; }
+.reveal .slides section :is(.dim-top, .dim-bottom, .dim-depth) > .dim-arrow {
+  inset: 0;
+  clip-path: polygon(0 calc(50% - 0.5px), calc(100% - 7px) calc(50% - 0.5px), calc(100% - 7px) 0, 100% 50%, calc(100% - 7px) 100%, calc(100% - 7px) calc(50% + 0.5px), 0 calc(50% + 0.5px));
 }
-.reveal .flow .dim-right[data-dim]::after { right: auto; left: calc(100% + 11px); }
-.reveal .flow .dim-right[data-dim]::before { right: auto; left: calc(100% + 30px); }
+.reveal .slides section .dim-bottom { top: calc(100% + var(--dim-gap, 14px) - 3.5px); }
+.reveal .slides section .dim-top { bottom: calc(100% + var(--dim-gap, 14px) - 3.5px); }
+.reveal .slides section :is(.dim-top, .dim-bottom, .dim-depth) > .dim-label { left: 50%; transform: translateX(-50%); }
+.reveal .slides section .dim-bottom > .dim-label { top: calc(100% + 2px); }
+.reveal .slides section .dim-top > .dim-label { bottom: calc(100% + 2px); }
+// depth: a horizontal arrow rotated around its left end (style set by the filter); the label is
+// turned back upright, above the middle of the arrow
+.reveal .slides section .dim-depth { right: auto; transform-origin: 0 50%; }
+.reveal .slides section .dim-depth > .dim-label { bottom: calc(100% + 1px); transform: translateX(-50%) rotate(var(--dim-angle, 0deg)); }
+
+// ============================================================================
+//  STACKS — stack="c1 c2 … cn" depth= lift= (talk.lua stack()): n slices of the box's size, the
+//  first one in front, the others shifted behind; the box's own background is dropped
+// ============================================================================
+.reveal .slides section .stacked { background: none !important; border: 0 !important; }
+.reveal .slides section .stacked > .slice {
+  position: absolute; display: block; width: 100%; height: 100%; box-sizing: border-box; margin: 0;
+  border-radius: inherit;
+}
+.reveal .slides section .stacked > :not(.slice, .dim, svg) { position: relative; }
+
+// ============================================================================
+//  ROTATED CONTENT — .rot-l / .rot-r on a box (talk.lua rot()): the content is turned a quarter
+//  turn and stays centred in the box (labels of column vectors)
+// ============================================================================
+.reveal .slides section :is(.rot-l, .rot-r) > .rot {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;
+}
+.reveal .slides section .rot-l > .rot { transform: rotate(-90deg); }
+.reveal .slides section .rot-r > .rot { transform: rotate(90deg); }
+.reveal .slides section .rot p { margin: 0; }
 
 // ============================================================================
 //  BOXES AND SHAPES
@@ -706,7 +805,7 @@ $ph: "calc(100% + 2 * var(--sec-bleed-x))";
 .reveal .slides section .filled { border: 3.67px solid var(--talk-accent-dark); background: var(--talk-accent); color: var(--talk-bg); }
 .reveal .slides section .shape:is(.box, .filled) { border: none; background: none; }
 .reveal .slides section .shape { box-sizing: border-box; align-content: unsafe center; text-align: center; }
-.reveal .slides section .shape > :not(svg.geom) { position: relative; }
+.reveal .slides section .shape > :not(svg.geom, .dim) { position: relative; }
 .reveal .slides section span.shape:not(.absolute) { display: inline-block; }
 
 // EMPTY LINES, as in PowerPoint: `-` alone on its line in a list (an empty item, no marker), or a
@@ -726,3 +825,67 @@ $ph: "calc(100% + 2 * var(--sec-bleed-x))";
 .reveal .slides section span.tb { display: block !important; }
 .reveal .slides section span.tb.va-ctr { align-content: unsafe center; }
 .reveal .slides section span.tb.va-b { align-content: unsafe end; }
+
+// ============================================================================
+//  SEPARATORS — []{.sep .absolute left= top= width=600} (horizontal) or height=300 (vertical):
+//  a line, thickness= (1 px), color= (black), dash="12 8" (dashed), any click / class as usual
+//  (talk.lua box_attrs)
+// ============================================================================
+.reveal .slides section .sep { display: block; background: #000; padding: 0; pointer-events: none; }
+
+// ============================================================================
+//  AUDIO COLUMNS — audio-col="x1 x2" on a box holding a list: the speaker icons written in the
+//  items ({{< audio >}}, []{.audio-btn}) are aligned in columns, their left edge x px from the
+//  box's text, centred on their item's line (the second icon of an item goes to x2)
+// ============================================================================
+.reveal .slides .audio-cols li > .talk-audio, .reveal .slides .audio-cols li > p > .talk-audio {
+  position: absolute; top: 0; height: 1.2em; display: flex; align-items: center;   // on the item's first line
+  left: calc(var(--audio-col1, 0px) - var(--mp, 0px));   // (--mp: left of the item's level in the box)
+}
+.reveal .slides .audio-cols li .talk-audio ~ .talk-audio { left: calc(var(--audio-col2, 0px) - var(--mp, 0px)); }
+.reveal .slides .audio-cols li .talk-audio ~ .talk-audio ~ .talk-audio { left: calc(var(--audio-col3, 0px) - var(--mp, 0px)); }
+
+// ============================================================================
+//  CARDS — ::: {.card}  ### Title  body  ::: {.card-foot} … :::  :::  (talk.lua card()):
+//  a titled box: the title bar in the PowerPoint shape style (.filled), a framed body under it
+//  (its text centred vertically, "•" markers), an optional footer in the light accent colour.
+//  In a row of columns (::: {.column .card}) the cards share the row's height; alone, give the
+//  card width= / height= (or .absolute left= top=).
+// ============================================================================
+.reveal .slides section .card {
+  display: flex !important; flex-direction: column; box-sizing: border-box; margin: 0;
+  border: 1px solid var(--talk-accent); background: var(--talk-bg); color: var(--talk-box-text, #000);
+  font-size: calc(18 * var(--talk-pt)); line-height: 1.15; text-align: left;
+}
+.reveal .slides div.columns > .column.card { display: flex !important; }
+.reveal .slides div.columns:has(> .column.card, > .column > .card) { align-items: stretch; }
+.reveal .slides div.columns > .column > .card { height: 100%; }
+.reveal .slides section .card > .card-title {
+  flex: none; display: flex; align-items: center; justify-content: center; text-align: center;
+  margin: -1px -1px 0 -1px; min-height: var(--card-title-height, 73px); padding: 4.8px 9.6px; box-sizing: border-box;
+  background: var(--talk-accent); border: 3.67px solid var(--talk-accent-dark); color: var(--talk-bg);
+}
+.reveal .slides section .card > .card-title p { margin: 0; }
+.reveal .slides section .card > .card-body {
+  flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center;
+  padding: 6px 14px; min-height: var(--card-body-height, 0px);
+  --talk-b1: "•"; --talk-b1-size: 1; --talk-mar1: 30px; --talk-ind1: -30px; --talk-spcb1: 0px;
+  --talk-b2: "•"; --talk-b2-size: 1; --talk-mar2: 78px; --talk-ind2: -30px; --talk-spcb2: 0px;
+}
+.reveal .slides section .card > .card-body > p { margin: 0; }
+.reveal .slides section .card > .card-body li { font-size: 1em; font-style: normal; }
+.reveal .slides section .card > .card-foot {
+  flex: none; display: flex; flex-direction: column; justify-content: center; text-align: center;
+  padding: 6px 14px; margin: 0 -1px -1px -1px; min-height: var(--card-foot-height, 0px);
+  background: color-mix(in srgb, var(--talk-accent) 50%, var(--talk-bg));
+}
+.reveal .slides section .card > .card-foot p { margin: 0; }
+
+// ============================================================================
+//  EDGES — [label]{.edge from=a to=b steps= color= width= shift= along=}: an arrow from element
+//  #a to element #b, drawn by talk.js (annotations module); label beside its middle
+// ============================================================================
+.reveal .edge { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 3; --annot-c: var(--talk-accent); color: var(--talk-text); }
+.reveal .edge-label { position: absolute; white-space: nowrap; font-size: var(--annot-size, calc(18 * var(--talk-pt))); line-height: 1.15; transform: translate(-50%, -50%); }
+.reveal .edge-label p { margin: 0; }
+.reveal .edge svg.annot-arrows polygon { opacity: 1; }

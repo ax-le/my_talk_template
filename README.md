@@ -105,9 +105,24 @@ Some [smaller words]{size=14} and [coloured ones]{color=accent}.
 |---|---|
 | `left top right bottom width height` | position and size in px on a 1280 × 720 slide (Quarto's own attributes on `.absolute`; `%` also works) |
 | `size=18` | font size in points, as in PowerPoint (× `--talk-pt` = 1.24 px, Libre Franklin being wider) |
-| `color=` `background=` | any CSS colour, or a theme name: `text`, `title`, `accent`, `background`, `bar` |
+| `color=` `background=` | any CSS colour, or a colour name (see Colours) |
+| `opacity=0.5` | a half-transparent box (e.g. `background=accent opacity=0.5`, a highlight laid over a region) |
 | `align=center` / `right` | text alignment |
 | `border="1px solid accent"`, `radius=10`, `line-height=1.2`, `padding=` | frame, rounded corners, spacing |
+
+A **line** is a `.sep` box: `[]{.sep .absolute left=144 top=430 width=1000}` (horizontal, 1 px, black) or
+`[]{.sep .absolute left=640 top=445 height=240 thickness=6 color=accent}` (vertical); `dash="12 8"` makes it dashed
+(12 px dashes, 8 px gaps); give it `.fragment fragment-index=` like anything else. A **titled box** (a title bar in the shape style over a framed body) is a `.card`:
+
+```markdown
+::: {.absolute .card left=155 top=456 width=893 height=145 align=center}
+### As a proxy task
+Quantitatively evaluates the relevance of a music analysis model
+:::
+```
+
+In a row of columns, `::: {.column .card}` (see Columns); an optional `::: {.card-foot} … :::` at the end of the card is a footer
+in the light accent colour. The body centres its text vertically and uses "•" markers.
 
 Boxes converted from PowerPoint keep its defaults, so they only state what differs:
 
@@ -121,6 +136,21 @@ Boxes converted from PowerPoint keep its defaults, so they only state what diffe
 `style=` still works for anything else (rotations, CSS variables…); the filter merges it with the attributes.
 
 ## Colours
+
+Wherever a colour is expected (`color=`, `background=`, `border=`, `hl=`, `cells=`, `stack=`, `\hl{}{}{}`, `.sep` / `.edge` / `.annot`
+colours) a **name** works: the theme names `text title accent background bar`, the template palette `red teal gold orange purple
+green brown navy black lime cyan`, and the deck's own names, defined once in the YAML:
+
+```yaml
+talk:
+  highlight:
+    colors:
+      intro: "#F2C418"      # hl="1-@3 intro", background=intro, cells="intro verse1 …"
+      dark: "#325358"
+      shade6: dark          # a name as value: the same colour under another name
+```
+
+Arrows of quarto-arrows take `color="var(--hl-intro)"` / `color="var(--talk-accent)"`. The theme colours:
 
 ```yaml
 talk:
@@ -187,6 +217,8 @@ Native reveal.js fragments: `.fragment` + `fragment-index=N` (the click number),
 
 - **Delay** (PowerPoint "after previous" + delay): `delay=3.9` on a fragment makes it appear 3.9 s after its click, by itself. Going back hides it at once.
 - **After the sound**: `delay=end` makes it appear when the sound playing at its click ends, whatever its length (e.g. the spectrograms once the sound started by the same click has played; replace the file and nothing else changes). Stopping the sound (click on the icon, key **A**) shows it at once, and so does a click with no sound playing or a sound blocked by the browser.
+- **After a move**: `delay=move` makes it appear once the `.fragment .move` of the same click has arrived (whatever the move's duration).
+- **Fading out by itself**: `.fade-after` on an object shows it when the slide arrives and fades it out once the slide is in place (after the push; `fade-delay=2` for another delay). PowerPoint's exit effect "with previous" at the start of a slide.
 - **Appears at one click, disappears at a later one**: two nested spans, `[[text]{.fragment .fade-out data-fragment-index=3}]{.fragment data-fragment-index=1}` (`.fade-in-then-out` only means "gone at the very next click").
 
 ## Lists
@@ -206,7 +238,9 @@ Deeper levels start again with the markers of levels 1–5 (and keep moving righ
 - **All at once** is the default. **One click per item**: Quarto's native `::: {.incremental}` (or `## Title {.incremental}`, or `incremental: true` in YAML); every item, sub-items included, is a click, and its marker appears with it. `::: {.nonincremental}` switches it off again.
 - **One click per level-1 item** (PowerPoint "by 1st level paragraphs"): `::: {.incremental levels=1}` (also on a heading). Sub-items appear with their parent. `levels=2` makes levels 1 and 2 clicks.
 - **Pauses** `. . .` and `[text]{.fragment}` inside an item also work: the marker waits for the text.
-- **Other markers.** Per box or slide, with a class: `.b-sq`, `.b-dash`, `.b-dot`, `.b-circ`, `.b-tri`, `.b-check`, `.b-arrow`, `.b-none` (all levels), or `.b-dot0` … `.b-dot4` (one level; 0 = level 1). Or per level with an attribute: `::: {bullets="• – ✓ none"}`. For the whole deck: YAML `talk: bullets: "■ – • ○ ►"`. `.no-bullets` removes markers and hanging indents.
+- **Other markers.** Per box or slide, with a class: `.b-sq`, `.b-dash`, `.b-dot`, `.b-circ`, `.b-tri`, `.b-check`, `.b-cross`, `.b-arrow`, `.b-none` (all levels), or `.b-dot0` … `.b-dot4` (one level; 0 = level 1). Or per level with an attribute: `::: {bullets="• – ✓ none"}`. For the whole deck: YAML `talk: bullets: "■ – • ○ ►"`. `.no-bullets` removes markers and hanging indents.
+- **Pros and cons, picture markers.** `- [State of the art]{.yes}` gets a green check as its marker, `- [Time consuming]{.no}` a red cross; `- [Similarity function]{mark=media/question.svg mark-size=73}` uses a picture, centred on the item's first line. `indent="86 50"` on the box moves the text of level-1 items to 86 px (the marker hangs in that space) and each deeper level 50 px further.
+- **Sounds in columns.** `audio-col="441"` (or `"533 673"` for two) on the box holding the list: the speaker icons written in the items (`{{< audio … >}}` or `[]{.audio-btn data-audio=…}`) are aligned in a column, x px from the text's left edge, on their item's first line: `- Euclidean norm {{< audio media/x.mp3 fragment=2 autoplay=true >}}`.
 - **Spacing.** `spacing="20 10"` on a box or slide: space before level-1 items / before deeper items, in pt (one value: every level; default 10 and 5). `line-height=1.5` sets the line spacing; `-` alone is an empty line (see Titles, empty lines).
 - **Fine control.** Everything is a CSS variable that any element can set (the converter writes them from the pptx when a text box differs from the master): `--talk-bN` (marker), `--talk-bN-size` (factor), `--talk-marN` (left edge of the text), `--talk-indN` (marker position relative to the text, negative = hanging), `--talk-spcbN` (space before), `--talk-spca` (space after), `--talk-szN` / `--talk-stN` (size / style of Markdown items), `--talk-bullet-color`, `--talk-bullet-font`.
 - Numbered lists (`1.`) use the same indents, with "1." markers.
@@ -226,7 +260,7 @@ Native Quarto columns, laid out as a flex row with a gap (Quarto alone puts them
 ::::
 ```
 
-`gap=` is in px (default 40); columns without `width=` share the space equally. Any content goes inside (lists, pictures, boxes, maths).
+`gap=` is in px (default 40); columns without `width=` share the space equally. Any content goes inside (lists, pictures, boxes, maths). `lines=true` (or `lines="2px accent"`) draws a line in the middle of each gap; `.absolute left= top= width=` on the row places it anywhere; `::: {.column .card}` makes a row of titled boxes of the same height (see Placing and sizing things). To place blocks vertically inside a column without empty lines, give it `height=` and `.va-ctr` (centred), `.va-b` (at the bottom) or `.va-spread` (spread evenly: a list on top, an equation under it).
 
 ## Grid boxes: one box divided into cells
 
@@ -365,11 +399,12 @@ talk:
 | `[@kim2007nonnegative]`, `[@a; @b]` | `[KC07]`, `[KC07, Mar+20]` |
 | `[@foote2000automatic]{.fullcite}` | the full reference in the text, like `\fullcite` |
 | `[[@grill2015music]]{.refs-only}` | in the slide's reference list but not in the text (e.g. a work only shown in a chart) |
-| `## References {.references-slide}` + `::: {#refs}`/`:::` | the complete bibliography, two columns |
+| `## References {.references-slide}` + `::: {#refs}`/`:::` | the complete bibliography, two columns; the entries that do not fit continue on copies of the slide: "References (1/3)", "(2/3)"… |
 | `{.no-slide-refs}` on a heading | no reference list on that slide |
 
 - **Labels.** They follow biblatex `alphabetic`: `Foo00`, `MCB22a`, `Mar+20`. A `shorthand = {…}` field in the `.bib` always wins, so a thesis `.bib` gives the same labels as the LaTeX document.
 - **Own work.** With `highlight-author`, labels of entries by that author (`**[MCB22a]**`) are bold in the text and in the lists.
+- **Room.** Nothing scales: a slide's own list grows upward from the bottom at 11 px, so keep it to a few entries (`{.refs-only}` sparingly); the references slide paginates by itself (measured in the browser: the entries that would spill out of the two columns move to copies of the slide).
 - **Formatting.** References use `alphabetic.csl`. Set `csl: other.csl` for another style, for example author-year.
 
 ## Audio
@@ -447,7 +482,8 @@ The highlight is part of the object, not a second shape laid over it: move or re
 
   - `\hlo{STEPS}{colour}{part}` draws an oval and `\hl{…}{…}{…}` a rounded box. They take the same steps as `hl=`, and palette names for the colour.
   - The highlight takes the exact size of that part of the equation, so changing the equation or its font size needs no re-alignment. Wrap a relation in `\mathrel{…}` (e.g. `\mathrel{\hlo{3}{orange}{\approx}}`) to keep its spacing.
-  - It relies on KaTeX's `\htmlData`, which the template enables only for this command.
+  - It relies on KaTeX's `\htmlData`, which the template enables only for this command. Theme names (`accent`) work too.
+  - `\tick{lime}` draws a thick vertical tick in an equation (a boundary on a time line; `\frac{\tick{lime}}{\tick{red} + \tick{lime}}` is a precision written with ticks).
 - **Annotations** (labels with arrows, like `annotate-equations`). Name a part of an equation, then attach a label to it:
 
   ```markdown
@@ -460,11 +496,11 @@ The highlight is part of the object, not a second shape laid over it: move or re
 
   - **Naming.** `\hl[name]{…}` / `\hlo[name]{…}` name a highlighted part. `\eqmark{name}{part}` names a part without highlighting it; wrap it in `\mathrel`/`\mathbin` when it is a relation or an operator. `to=` can also be the `#id` of any element (a box, an image).
   - **Placement.** The label is placed `pos=below|above|left|right` of its targets, at `dist` px, moved by `shift` px. `x=… y=…` place it at fixed slide coordinates instead.
-  - **Arrows.** One arrow is drawn to each target (`to="q gwh"` gives two). They always point at where the parts are, so editing the equation needs no re-alignment. `arrow=fat` (default, translucent like the PowerPoint ones), `thin` or `none`.
+  - **Arrows.** One arrow is drawn to each target (`to="q gwh"` gives two). They always point at where the parts are, so editing the equation needs no re-alignment. `arrow=fat` (default, translucent like the PowerPoint ones), `thin` or `none`; `dir=from` reverses them (from the targets to the label: "these two lines give F"); `anchor=right` (or `left`, `top`, `bottom`) makes them meet each target at the middle of that side, like TikZ's `east`, instead of where the line from its centre leaves it.
   - **Look.** The colour comes from the target's highlight; set `color=` to override it. `box=false` removes the frame. `size=` sets the font size, and `sub="…"` adds a smaller line under the label.
   - **Steps.** `steps=` works as for `hl=`.
 - **Press R** (while preparing a talk) to show every highlight area with its steps, and the grids in blue.
-- **`.matrix`.** A ready-made class for a matrix box: a black frame with its label centred.
+- **`.matrix`.** A ready-made class for a matrix box: a black frame with its label centred (dimension arrows: see Matrices and tensors).
 - **From PowerPoint.** `_extensions/tools/highlights.py` turns half-transparent red overlay shapes into `hl` on the shape or image under them. It snaps them to a grid when they fit one; other overlays become rectangles in %. Overlays it cannot guess (ellipses over an equation, halos) were rewritten by hand in `_extensions/tools/deck_patches.py`.
 
 ## 3D images (any image or block)
@@ -479,13 +515,15 @@ The highlight is part of the object, not a second shape laid over it: move or re
 
 ## Arrows, lines and diagrams
 
-No hand-drawn SVG: arrows and lines come from the [quarto-arrows](https://emilhvitfeldt.github.io/quarto-arrows) extension (`_extensions/arrows`), diagrams from Quarto's built-in Mermaid.
+No hand-drawn SVG: arrows come from the [quarto-arrows](https://emilhvitfeldt.github.io/quarto-arrows) extension (`_extensions/arrows`), plain lines are `.sep` boxes (see Placing and sizing things), diagrams come from Quarto's built-in Mermaid.
 
 ```markdown
 {{< arrow from="170,595" to="345,595" width=1 size=6 position="absolute" >}}           ← thin arrow (slide px)
-{{< arrow from="244,388" to="718,388" width=4 head=none position="absolute" >}}        ← plain line
+[]{.sep .absolute left=244 top=386 width=474 thickness=4}                             ← plain line
 {{< arrow from="630,412" to="469,434" head=circle head-start=true head-end=false position="absolute" >}}
 ```
+
+- **Arrows between objects** (a graph): give the objects ids and write `[2]{.edge from=b1 to=b2 steps=1-}`: an arrow from the edge of `#b1` to the edge of `#b2`, drawn where they really are, with "2" beside its middle (`shift=` px to its left, `along=` px further along, `color=`, `width=`, `head=`). Both ends follow the objects, so moving a node moves its edges; a second edge over the same pair at a later step (`[]{.edge from=b1 to=b2 steps=2- color=dark}`) recolours it.
 
 - Coordinates are slide pixels (1280 × 720). `to` is the **base** of the arrowhead: the tip lies `size × width` px further.
 - `color="var(--talk-accent)"` uses a theme colour. Other options: `dash="4 8"`, `curve=0.3`, `bend=`, `label=`, `fragment=true` (drawn at a click).
@@ -511,17 +549,31 @@ No hand-drawn SVG: arrows and lines come from the [quarto-arrows](https://emilhv
 [$\mathscr{X}$]{.absolute .box left=820 top=170 width=160 height=130 shape=cube depth=30}
 ```
 
+### Matrices and tensors
+
+```markdown
+[$$X$$]{.absolute .matrix left=201 top=412 width=373 height=114 rows=6 lines=true dim-left=b dim-bottom=tf}
+[$\mathscr{X}$]{.absolute .tb .va-ctr left=555 top=242 width=222 height=186 align=center shape=cube depth=54 dim-left=f dim-bottom=t dim-depth=b}
+[$$Q$$]{.absolute .tb .va-ctr left=1047 top=144 width=69 height=66 align=center shape=parallelogram slant=51 dim-depth=b dim-bottom="r_b"}
+[]{.absolute .matrix left=615 top=350 width=66 height=125 stack="shade1 shade2 shade3 shade4 shade5 shade6" depth=80 lift=68 dim-left=f dim-bottom=t dim-depth=b}
+```
+
+- `.matrix`: a framed box with its label centred; `rows=` / `cols=` + `lines=true` divide it (see Grid boxes), `cells="c1 c2 …"` colours the cells.
+- `dim-left=`, `dim-right=`, `dim-top=`, `dim-bottom=`: a dimension arrow along that side (14 px outside, `dim-gap=`), its label just beyond it. The label is maths (`r_b` reads as $r_b$); write `$…$` or plain text otherwise. It is 18 pt whatever the box's font; `dim-size=14` changes it. On a cube the left / bottom arrows follow the front face and `dim-depth=` runs along the top-left edge; on a parallelogram it follows the slanted side; on a stack it goes from the front slice to the back one. For a picture, wrap it in a `::: {.absolute left= top= width= height= dim-left=b}` box.
+- `stack="c1 … cn"`: a stack of n slices (a tensor as a pile of matrices), the first colour in front, the others `depth=` px to the right and `lift=` px up. With `stack-id=tfb` the slices get `data-id` tfb-1 … tfb-n, and the cells of a grid box with `cell-id=tfb` on the previous slide morph into them (`auto-animate=true` on both slides); `dim-id=tfb` lets the arrows glide along (`data-id` tfb-left, tfb-bottom).
+- `.rot-l` / `.rot-r` turn the content of a box by a quarter turn (a column vector's label in a tall thin box).
+
 - One line per object: a span `[text]{.absolute …}` is a box like a `::: {.absolute …}` div (use the div for several paragraphs or a list).
 - `shape=` draws an outline behind the content: `arrow-right`, `arrow-left`, `arrow-up`, `arrow-down` (`head=`, `shaft=` in %), `shrink` / `grow` (trapezoid narrowing / widening to the right, `taper=` %), `parallelogram` (`slant=` %), `cube` (`depth=` px). `background=` fills it, `border="2px solid accent"` draws it.
 - **Horizontal block diagrams**: items laid out in one row, centred vertically:
 
 ```markdown
 ::: {.absolute .flow left=555 top=200 width=645 height=310 size=18 gap=10}
-[$X_i^T$]{.box width=42 height=100% dim="ft"}
+[$X_i^T$]{.box .rot-l width=42 height=100% dim-left="ft"}
 [Encoder]{shape=shrink width=112 height=94% taper=25%}
-[$Q_i^T$]{.box width=42 height=78}
+[$Q_i^T$]{.box .rot-l width=42 height=78}
 $\xrightarrow{\;a()\;}$
-[$\hat{X}_i^T$]{.box .dim-right width=42 height=100% dim="ft"}
+[$\hat{X}_i^T$]{.box .rot-l width=42 height=100% dim-right="ft"}
 :::
 ```
 
@@ -540,4 +592,4 @@ $\xrightarrow{\;a()\;}$
 
 ## Files
 
-`_extension.yml` (format defaults), `talk.scss` (theme and all styles; colours and sizes are CSS variables), `talk.lua` (sections, side panels, citations, highlights, tilt, short attributes, appendix, TOC, YAML options), `audio.lua` (shortcode), `audio_icon.lua` (the speaker icon, shared by both filters), `talk.js` (audio, letter-box bleed, morph matching, R key for highlights, slide-number labels), `alphabetic.csl`, `fonts/` + `fonts.css`, `katex/` (offline maths).
+`_extension.yml` (format defaults), `talk.scss` (theme and all styles; colours and sizes are CSS variables), `talk.lua` (sections, side panels, citations, highlights, tilt, short attributes, cards, separators, dimension arrows, stacks, edges, appendix, TOC, YAML options), `audio.lua` (shortcode), `audio_icon.lua` (the speaker icon, shared by both filters), `talk.js` (audio, letter-box bleed, morph matching, R key for highlights, slide-number labels), `alphabetic.csl`, `fonts/` + `fonts.css`, `katex/` (offline maths).

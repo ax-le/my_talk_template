@@ -22,9 +22,13 @@
    STEPS as for hl=…: 2, 2-4, 2-, 0 ; colour: a name of the highlight palette (teal, purple…)
    KaTeX marks the part with \htmlData; the highlight is then added as fragments.         */
 (function () {
+  // theme colour names, as in talk.lua color_value (palette names: --hl-NAME)
+  const THEME = { text: '--talk-text', title: '--talk-title', accent: '--talk-accent', background: '--talk-bg', bar: '--talk-bar' };
   const MACROS = {
     '\\hl': '\\htmlData{hl=#1,hlc=#2}{#3}',
     '\\hlo': '\\htmlData{hl=#1,hlc=#2,hlshape=oval}{#3}',
+    // \tick{colour}: a thick vertical tick (a boundary on a time line), palette name or CSS colour
+    '\\tick': '\\htmlStyle{color:var(--hl-#1,#1)}{\\rule[-0.1em]{0.28em}{0.85em}}',
   };
   // the fragments were made by talk.lua right after the equation (.hl-math-slot), in order
   function regions(mathEl) {
@@ -35,7 +39,7 @@
       const c = (el.getAttribute('data-hlc') || '').trim();
       el.classList.add('hl-host', 'hl-under');
       if (el.getAttribute('data-hlshape') === 'oval') el.classList.add('hl-oval');
-      if (c) el.style.setProperty('--hl-c', /^#|\(/.test(c) ? c : `var(--hl-${c}, ${c})`);
+      if (c) el.style.setProperty('--hl-c', /^#|\(/.test(c) ? c : THEME[c] ? `var(${THEME[c]})` : `var(--hl-${c}, ${c})`);
       if (slot.getAttribute('data-name')) el.setAttribute('data-anchor', slot.getAttribute('data-name'));
       slot.classList.add('placed');
       el.appendChild(slot);
@@ -48,7 +52,7 @@
       opts = Object.assign({}, opts || {});
       opts.macros = Object.assign({}, opts.macros || {}, MACROS);
       const trust = opts.trust;
-      opts.trust = ctx => ctx.command === '\\htmlData' || (typeof trust === 'function' ? trust(ctx) : !!trust);
+      opts.trust = ctx => ctx.command === '\\htmlData' || ctx.command === '\\htmlStyle' || (typeof trust === 'function' ? trust(ctx) : !!trust);
       const r = render.call(this, tex, el, opts);
       if (el && el.nextElementSibling) regions(el);
       if (window.TalkAnnot) window.TalkAnnot.later();
@@ -87,7 +91,46 @@
     const s = 1 / Math.max(Math.abs(dx) / hw || 0, Math.abs(dy) / hh || 0, 1e-9);
     return [ox + dx * s, oy + dy * s];
   }
+  // an arrow polygon from (x1, y1) to the tip (x2, y2): shaft w px, head `head` long and 2·hw wide
+  function arrow(x1, y1, x2, y2, w, head, hw) {
+    const len = Math.hypot(x2 - x1, y2 - y1); if (len < 4) return null;
+    const ux = (x2 - x1) / len, uy = (y2 - y1) / len;
+    const bx = x2 - ux * head, by = y2 - uy * head, px = -uy, py = ux;
+    const pts = [[x1 + px * w / 2, y1 + py * w / 2], [bx + px * w / 2, by + py * w / 2], [bx + px * hw, by + py * hw], [x2, y2],
+                 [bx - px * hw, by - py * hw], [bx - px * w / 2, by - py * w / 2], [x1 - px * w / 2, y1 - py * w / 2]];
+    const p = document.createElementNS(NS, 'polygon');
+    p.setAttribute('points', pts.map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' '));
+    return p;
+  }
+  function svgFor(sec, kind) {
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'annot-arrows ' + kind);
+    svg.setAttribute('width', sec.offsetWidth); svg.setAttribute('height', sec.offsetHeight);
+    return svg;
+  }
+  // [label]{.edge from=a to=b}: an arrow from the edge of #a to the edge of #b, label beside its middle
+  function layoutEdge(sec, a, sr, k) {
+    const A = target(sec, a.getAttribute('data-from') || ''), B = target(sec, a.getAttribute('data-to') || '');
+    const lab = a.querySelector('.edge-label');
+    let svg = a.querySelector(':scope > svg.annot-arrows');
+    if (svg) svg.remove();
+    if (!A || !B || !lab) return;
+    const bA = box(A, sr, k), bB = box(B, sr, k), gap = parseFloat(a.getAttribute('data-gap') || '2');
+    const [x2, y2] = exitPoint(bB, cx(bA), cy(bA), gap);
+    const [x1, y1] = exitPoint(bA, x2, y2, gap);
+    const w = parseFloat(a.getAttribute('data-width') || '4'), head = parseFloat(a.getAttribute('data-head') || '') || w * 3.5;
+    svg = svgFor(sec, 'edge-arrow');
+    const p = arrow(x1, y1, x2, y2, w, head, head * 0.6);
+    if (p) svg.appendChild(p);
+    a.insertBefore(svg, a.firstChild);
+    // the label: at the middle of the arrow, `shift` px to its left (seen from a to b), `along` px further
+    const len = Math.hypot(x2 - x1, y2 - y1) || 1, ux = (x2 - x1) / len, uy = (y2 - y1) / len;
+    const shift = parseFloat(a.getAttribute('data-shift') || '18'), along = parseFloat(a.getAttribute('data-along') || '0');
+    const mx = (x1 + x2) / 2 + ux * along, my = (y1 + y2) / 2 + uy * along;
+    lab.style.left = (mx + uy * shift) + 'px'; lab.style.top = (my - ux * shift) + 'px';
+  }
   function layoutOne(sec, a, sr, k) {
+    if (a.classList.contains('edge')) return layoutEdge(sec, a, sr, k);
     const names = (a.getAttribute('data-to') || '').split(/[\s,]+/).filter(Boolean);
     const ts = names.map(n => target(sec, n)).filter(Boolean).map(e => box(e, sr, k));
     const lab = a.querySelector('.annot-box');
@@ -111,31 +154,29 @@
     if (svg) svg.remove();
     const kind = a.getAttribute('data-arrow') || 'fat';
     if (kind === 'none' || kind === 'false' || !ts.length) return;
-    svg = document.createElementNS(NS, 'svg');
-    svg.setAttribute('class', 'annot-arrows ' + kind);
-    svg.setAttribute('width', sec.offsetWidth); svg.setAttribute('height', sec.offsetHeight);
-    // the arrow starts at the label box itself (not at the text under it)
+    svg = svgFor(sec, kind);
+    // the arrow starts at the label box itself (not at the text under it); dir=from: it starts
+    // at the target and points to the label
     const main = lab.querySelector('.annot-label') || lab;
     const L = { l: x + main.offsetLeft, t: y + main.offsetTop, r: x + main.offsetLeft + main.offsetWidth, b: y + main.offsetTop + main.offsetHeight };
-    const gap = parseFloat(a.getAttribute('data-gap') || '3');
+    const gap = parseFloat(a.getAttribute('data-gap') || '3'), rev = a.getAttribute('data-dir') === 'from';
+    // anchor=right|left|top|bottom: the arrow meets the target at the middle of that side (like
+    // TikZ's east/west…); default: where the line from its centre leaves it
+    const anchor = a.getAttribute('data-anchor');
+    const side = (b, g) => anchor === 'right' ? [b.r + g, cy(b)] : anchor === 'left' ? [b.l - g, cy(b)]
+      : anchor === 'top' ? [cx(b), b.t - g] : anchor === 'bottom' ? [cx(b), b.b + g] : null;
     ts.forEach(T => {
-      const [x2, y2] = exitPoint(T, cx(L), cy(L), gap);
-      const [x1, y1] = exitPoint(L, x2, y2, 1);
-      const len = Math.hypot(x2 - x1, y2 - y1); if (len < 4) return;
-      const ux = (x2 - x1) / len, uy = (y2 - y1) / len;
-      const w = kind === 'thin' ? 2.5 : 9, head = kind === 'thin' ? 9 : 16, hw = kind === 'thin' ? 5 : 11;
-      const bx = x2 - ux * head, by = y2 - uy * head, px = -uy, py = ux;
-      const pts = [[x1 + px * w / 2, y1 + py * w / 2], [bx + px * w / 2, by + py * w / 2], [bx + px * hw, by + py * hw], [x2, y2],
-                   [bx - px * hw, by - py * hw], [bx - px * w / 2, by - py * w / 2], [x1 - px * w / 2, y1 - py * w / 2]];
-      const p = document.createElementNS(NS, 'polygon');
-      p.setAttribute('points', pts.map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' '));
-      svg.appendChild(p);
+      let [x2, y2] = side(T, rev ? 1 : gap) || exitPoint(T, cx(L), cy(L), rev ? 1 : gap);
+      let [x1, y1] = exitPoint(L, x2, y2, rev ? gap : 1);
+      if (rev) [x1, y1, x2, y2] = [x2, y2, x1, y1];
+      const p = arrow(x1, y1, x2, y2, kind === 'thin' ? 2.5 : 9, kind === 'thin' ? 9 : 16, kind === 'thin' ? 5 : 11);
+      if (p) svg.appendChild(p);
     });
     a.insertBefore(svg, a.firstChild);
   }
   function layout(sec) {
     if (!sec) return;
-    const as = sec.querySelectorAll('.annot');
+    const as = sec.querySelectorAll('.annot, .edge');
     if (!as.length) return;
     const sr = sec.getBoundingClientRect();
     if (!sr.width) return;
@@ -336,13 +377,14 @@
   function talkMatcher(fromSlide, toSlide) {
     const pairs = [], text = 'h1, h2, h3, h4, h5, h6, p, li';
     // an image with hl=… is wrapped in a span: it still pairs with the plain image of the other slide
-    const kind = el => el.classList.contains('hl-img-host') ? 'IMG' : el.nodeName;
-    findMatches(pairs, fromSlide, toSlide, '[data-id]', el => kind(el) + ':::' + el.getAttribute('data-id'), el => {
+    // a data-id pairs whatever the tags (a grid cell <div> with the slice <span> of a stack)
+    findMatches(pairs, fromSlide, toSlide, '[data-id]', el => 'ID:::' + el.getAttribute('data-id'), el => {
       // colour block of section slides: animate its real size → borders stay crisp
       if (el.matches(text)) return { scale: false };
       return {};
     });
-    findMatches(pairs, fromSlide, toSlide, text, el => el.nodeName + ':::' + el.innerText, () => ({ scale: false }));
+    // (a <p> holding only positioned objects has no text: it must not pair with another empty <p>)
+    findMatches(pairs, fromSlide, toSlide, text, el => el.innerText.trim() ? el.nodeName + ':::' + el.innerText : null, () => ({ scale: false }));
     findMatches(pairs, fromSlide, toSlide, 'img:not(.hl-img), video, iframe', el => el.nodeName + ':::' + (el.getAttribute('src') || el.getAttribute('data-src')));
     findMatches(pairs, fromSlide, toSlide, 'pre', el => el.nodeName + ':::' + el.innerText, () => ({ scale: false, styles: ['width', 'height'] }));
     return pairs;
@@ -430,6 +472,7 @@
 // ============================================================================
 // (6) delayed appearance: {.fragment delay=3.9} (PowerPoint "after previous" + delay) appears
 //     that many seconds after its click; it hides at once when going back (talk.scss).
+//     delay=move: appears when the motion path (.fragment.move) of the same click has ended.
 //     delay=end (after the sound) is handled by the audio module (3).
 // ============================================================================
 (function () {
@@ -439,5 +482,86 @@
       if (s > 0) el.style.setProperty('--talk-delay', s + 's');
     });
   }
+  function moves() {
+    if (!window.Reveal) return;
+    Reveal.on('fragmentshown', ev => {
+      const fs = ev.fragments || [ev.fragment];
+      // the delay holds only the way in: once the fragment has appeared it is reset, so a
+      // .fade-in-then-out leaves at its click without waiting again (restored when hidden)
+      fs.forEach(f => {
+        const s = parseFloat(f.dataset.delay);
+        if (s > 0) { clearTimeout(f._talkDelay); f._talkDelay = setTimeout(() => f.style.setProperty('--talk-delay', '0s'), s * 1000 + 250); }
+      });
+      const waiting = fs.filter(f => f.dataset.delay === 'move');
+      const mv = fs.filter(f => f.classList.contains('move'));
+      if (!waiting.length || !mv.length) return;
+      waiting.forEach(f => f.classList.add('talk-waiting'));
+      const release = () => waiting.forEach(f => f.classList.remove('talk-waiting'));
+      let done = 0;
+      mv.forEach(m => m.addEventListener('transitionend', () => { if (++done >= mv.length) release(); }, { once: true }));
+      const d = Math.max(...mv.map(m => parseFloat(getComputedStyle(m).transitionDuration) * 1000 || 1000));
+      setTimeout(release, d + 100);          // in case no transition fires (printing, reduced motion)
+    });
+    Reveal.on('fragmenthidden', ev => {
+      (ev.fragments || [ev.fragment]).forEach(f => {
+        const s = parseFloat(f.dataset.delay);
+        if (s > 0) { clearTimeout(f._talkDelay); f.style.setProperty('--talk-delay', s + 's'); }
+      });
+    });
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  if (document.readyState === 'complete') moves(); else window.addEventListener('load', moves);
+})();
+
+// ============================================================================
+// (7) references pagination: the entries of a .references-slide that do not fit its box (two
+//     columns, fixed height: they would spill into a third column off the slide) move to copies
+//     of the slide, inserted right after it; the headings read "References (1/3)", "(2/3)"…
+//     Measured in the browser, so it holds whatever the entries' lengths and the font.
+// ============================================================================
+(function () {
+  function overflowing(box) {
+    const r = box.getBoundingClientRect();
+    return Array.from(box.children).filter(e => e.getBoundingClientRect().left >= r.right - 1);
+  }
+  function paginate() {
+    const slides = Array.from(document.querySelectorAll('.reveal .slides section.references-slide'))
+      .filter(s => !s.dataset.talkPaginated);
+    let changed = false;
+    slides.forEach(first => {
+      const pages = [first];
+      let sec = first;
+      for (let guard = 0; guard < 50; guard++) {
+        const box = sec.querySelector('.talk-references');
+        if (!box) break;
+        const shown = sec.style.display;
+        sec.style.display = 'block';                       // reveal hides far slides: lay it out to measure
+        const over = overflowing(box);
+        sec.style.display = shown;
+        if (!over.length) break;
+        const copy = sec.cloneNode(false);
+        copy.id = first.id ? first.id + '-' + (pages.length + 1) : '';
+        const h = sec.querySelector('h2, h1, h3');
+        if (h) copy.appendChild(h.cloneNode(true));
+        const nb = box.cloneNode(false);
+        nb.id = (box.id || 'talk-refs') + '-' + (pages.length + 1);
+        over.forEach(e => nb.appendChild(e));
+        copy.appendChild(nb);
+        sec.after(copy);
+        pages.push(copy); sec = copy; changed = true;
+      }
+      if (pages.length > 1) pages.forEach((p, i) => {
+        const h = p.querySelector('h2, h1, h3');
+        if (h) h.insertAdjacentHTML('beforeend', ` <span class="refs-page">(${i + 1}/${pages.length})</span>`);
+      });
+      pages.forEach(p => p.dataset.talkPaginated = '1');
+    });
+    if (changed && window.Reveal && Reveal.sync) Reveal.sync();
+  }
+  function boot() {
+    if (!window.Reveal) return;
+    const go = () => { paginate(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(paginate); };
+    if (Reveal.isReady && Reveal.isReady()) go(); else Reveal.on('ready', go);
+  }
+  if (document.readyState === 'complete') boot(); else window.addEventListener('load', boot);
 })();
