@@ -28,37 +28,17 @@ import sys
 from collections import Counter, defaultdict
 
 sys.path.insert(0, __import__("os").path.dirname(__file__))
-from tidy import parse, fmt          # noqa: E402
+from shared import parse, fmt, BLOCK, style_of, px, template_palette, deck_palette          # noqa: E402
 
-HERE = __import__("os").path.dirname(__file__)
 # colour names: the deck's own palette (tools/_header.yml, talk: highlight: colors) first, then
-# the template's palette. A colour of a converted overlay is written with its name.
-TEMPLATE_PALETTE = {"red": "#C00000", "teal": "#69A1AB", "gold": "#F2C418", "orange": "#DC9528",
-                    "purple": "#9A5D78", "green": "#4A845E", "brown": "#87492C", "navy": "#1A2E40",
-                    "black": "#000000"}
+# the template's palette (talk/talk.scss). A colour of a converted overlay is written with its name.
+PALETTE = deck_palette() + template_palette()
 
 
 def widths(cells):
     """cols= of a row: the number of cells when they are equal (within 2 px), else their widths"""
     w = [round(c["box"][2]) for c in cells]
     return str(len(w)) if max(w) - min(w) <= 2 else " ".join("%d" % x for x in w)
-
-
-def palette():
-    names = []
-    try:
-        txt = open(__import__("os").path.join(HERE, "_header.yml"), encoding="utf8").read()
-        m = re.search(r'\n  highlight:\n(?:    .*\n)*?    colors:[^\n]*\n((?:      [\w-]+:.*\n)+)', txt)
-        if m:
-            for k, v in re.findall(r'^\s+([\w-]+):\s*"?(#[0-9A-Fa-f]{6})"?', m.group(1), re.M):
-                names.append((k, v.upper()))
-    except OSError:
-        pass
-    names += [(k, v.upper()) for k, v in TEMPLATE_PALETTE.items()]
-    return names
-
-
-PALETTE = palette()
 
 
 def colour_name(css):
@@ -75,24 +55,8 @@ def colour_name(css):
     return hexv, alpha
 
 
-BLOCK = re.compile(r'^::: \{([^{}\n]*)\}\n((?:(?!:::)[^\n]*\n)*?):::\n', re.M)
 TOL = 4            # px of gap / overlap between two touching boxes
 SKIP_CLASSES = {".ttl", ".move", ".tilt", ".ln-box", ".grp", ".hl-host"}
-
-
-def style_of(kv):
-    d = dict(kv)
-    out = {}
-    for part in d.get("style", "").split(";"):
-        if ":" in part:
-            k, v = part.split(":", 1)
-            out[k.strip()] = v.strip()
-    return out
-
-
-def px(v):
-    m = re.fullmatch(r'(-?[\d.]+)px', v or "")
-    return float(m.group(1)) if m else None
 
 
 def candidate(m, ids_count):

@@ -135,12 +135,12 @@ Boxes converted from PowerPoint keep its defaults, so they only state what diffe
 | `.tb.ttl` | title placeholder: 44 pt, title colour, line spacing 89 % |
 | `.nowrap` | no line wrapping |
 
-`style=` still works for anything else (rotations, CSS variables…); the filter merges it with the attributes.
+`style=` still works for anything else (rotations, CSS variables…). The filter merges everything into ONE `style=`, each CSS property once; when an attribute and `style=` (or two template features) set the same property, the attribute wins and the render log says so (`talk: CSS property … set twice`).
 
 ## Colours
 
-Wherever a colour is expected (`color=`, `background=`, `border=`, `hl=`, `cells=`, `stack=`, `\hl{}{}{}`, `.sep` / `.edge` / `.annot`
-colours) a **name** works: the theme names `text title accent background bar`, the template palette `red teal gold orange purple
+Wherever a colour is expected (`color=`, `background=`, `border=`, `lines=`, `hl=`, `cells=`, `stack=`, `\hl{}{}{}`, `.sep` / `.annot`
+colours) a **name** works, also inside a border (`border="2px solid teal"`): the theme names `text title accent background bar`, the template palette `red teal gold orange purple
 green brown navy black lime cyan`, and the deck's own names, defined once in the YAML:
 
 ```yaml
@@ -242,7 +242,7 @@ Deeper levels start again with the markers of levels 1–5 (and keep moving righ
 - **Pauses** `. . .` and `[text]{.fragment}` inside an item also work: the marker waits for the text.
 - **Other markers.** Per box or slide, with a class: `.b-sq`, `.b-dash`, `.b-dot`, `.b-circ`, `.b-tri`, `.b-check`, `.b-cross`, `.b-arrow`, `.b-none` (all levels), or `.b-dot0` … `.b-dot4` (one level; 0 = level 1). Or per level with an attribute: `::: {bullets="• – ✓ none"}`. For the whole deck: YAML `talk: bullets: "■ – • ○ ►"`. `.no-bullets` removes markers and hanging indents.
 - **Pros and cons, picture markers.** `- [State of the art]{.yes}` gets a green check as its marker, `- [Time consuming]{.no}` a red cross; `- [Similarity function]{mark=media/question.svg mark-size=73}` uses a picture, centred on the item's first line. `indent="86 50"` on the box moves the text of level-1 items to 86 px (the marker hangs in that space) and each deeper level 50 px further.
-- **Sounds in columns.** `audio-col="441"` (or `"533 673"` for two) on the box holding the list: the speaker icons written in the items (`{{< audio … >}}` or `[]{.audio-btn data-audio=…}`) are aligned in a column, x px from the text's left edge, on their item's first line: `- Euclidean norm {{< audio media/x.mp3 fragment=2 autoplay=true >}}`.
+- **Sounds in columns.** `audio-col="441"` (or `"533 673"` for two) on the box holding the list: the speaker icons written in the items (`[]{audio=…}`) are aligned in a column, x px from the text's left edge, on their item's first line: `- Euclidean norm []{.fragment audio=media/x.mp3 play=2}`.
 - **Spacing.** `spacing="20 10"` on a box or slide: space before level-1 items / before deeper items, in pt (one value: every level; default 10 and 5). `line-height=1.5` sets the line spacing; `-` alone is an empty line (see Titles, empty lines).
 - **Fine control.** Everything is a CSS variable that any element can set (the converter writes them from the pptx when a text box differs from the master): `--talk-bN` (marker), `--talk-bN-size` (factor), `--talk-marN` (left edge of the text), `--talk-indN` (marker position relative to the text, negative = hanging), `--talk-spcbN` (space before), `--talk-spca` (space after), `--talk-szN` / `--talk-stN` (size / style of Markdown items), `--talk-bullet-color`, `--talk-bullet-font`.
 - Numbered lists (`1.`) use the same indents, with "1." markers.
@@ -262,7 +262,7 @@ Native Quarto columns, laid out as a flex row with a gap (Quarto alone puts them
 ::::
 ```
 
-`gap=` is in px (default 40); columns without `width=` share the space equally. Any content goes inside (lists, pictures, boxes, maths). `lines=true` (or `lines="2px accent"`) draws a line in the middle of each gap; `.absolute left= top= width=` on the row places it anywhere; `::: {.column .card}` makes a row of titled boxes of the same height (see Placing and sizing things). To place blocks vertically inside a column without empty lines, give it `height=` and `.va-ctr` (centred), `.va-b` (at the bottom) or `.va-spread` (spread evenly: a list on top, an equation under it).
+`gap=` is in px (default 40); columns without `width=` share the space equally. Any content goes inside (lists, pictures, boxes, maths). `lines=true` (or `lines="2px accent"`) draws a line in the middle of each gap; `.absolute left= top= width=` on the row places it anywhere; `::: {.column .card}` makes a row of titled boxes of the same height (see Placing and sizing things). To place blocks vertically inside a column without empty lines, give it `height=` and `valign=center`, `valign=bottom` or `valign=spread` (spread evenly: a list on top, an equation under it). `valign=top|center|bottom` works on any box too (`.tb`, `.box`, `.filled`, shapes).
 
 ## Grid boxes: one box divided into cells
 
@@ -277,7 +277,7 @@ Matrices, structure bars, tensors seen from the front, colour overlays on an ima
 - [f]{.fragment}
 :::
 
-::: {.absolute .matrix left=150 top=420 width=150 height=120 cols=3 rows=3 lines=true hl="1@2,2; 2-@*,3 teal"}
+::: {.absolute .box left=150 top=420 width=150 height=120 cols=3 rows=3 lines=true hl="1@2,2; 2-@*,3 teal"}
 $M$
 :::
 ```
@@ -290,6 +290,8 @@ $M$
 | `hl="STEPS@CELL COLOUR; …"` | cells coloured at clicks (see Highlights): `3` (3rd cell, row by row), `2-4`, `2,3` (column 2, row 3), `*,3` (whole row 3) |
 | a list | one item per cell, row by row: the text of the cells (optional: a matrix keeps its single label) |
 | `[x]{.cell …}` alone in an item | attributes of the whole cell: `.fragment` (the cell appears), `background=`, `hl=`, `data-id=` (the cell morphs on its own into the element with the same `data-id` on the next slide, e.g. the slices of a tensor) |
+| `cells="c1 c2 …"` | the cells' backgrounds, row by row |
+| `morph-id=P` | the cells get `data-id` P-1, P-2…: they morph into the parts of another box with the same `morph-id` (the slices of a `stack=`, see Matrices and tensors) |
 
 - **Lines** are drawn above the colours and never double the box's border; a cell that appears on a click leaves the lines in place. When the box has a `width=`/`height=`, the cell boundaries are rounded to whole pixels inside the border, so lines, cells and highlights fall exactly on each other.
 - **Colours** can be names: the theme's (`text`, `title`, `accent`, `background`, `bar`), the highlight palette (`red`, `teal`, `gold`, …), or your own names defined once in YAML, e.g. for song sections: `talk: highlight: colors: {intro: "#F2C418", verse1: "#4A845E", …}`, then `hl="1-@3 intro"` and `hl="0- intro"` on the matching label: both use the same colour and transparency.
@@ -379,8 +381,10 @@ Set the defaults in YAML under `talk: section:`, or override them on one slide a
 | `text-color` | title colour | |
 | `border-width`, `border-color` | `21px`, `#000` | frame of the header, line closing the panel (`0` to remove) |
 | `panel-width` | `440px` | the summary title and the panel subtitle grow with it (sizes below are for 440 px) unless given explicitly |
-| `title-size`, `summary-title-size` | `60px`, `50px` | write them in px (the summary title is the header title zoomed by their ratio) |
+| `title-size`, `summary-title-size` | `60px`, `50px` (for a 440 px panel) | in px (the summary title is the header title zoomed by their ratio); `summary-title-size` given = that size whatever the panel width |
 | `subtitle-size`, `panel-subtitle-size`, `ref-size` | `24px`, `24px`, `12px` | subtitle of the header; of the panel (defaults to `subtitle-size`, scaled by the panel width); references |
+
+These defaults live in `talk.scss` (`:root`, SECTION SLIDES); the sizes inside the panel are computed there from `panel-width`.
 | `title-width`, `title-weight` | `900px`, `700` | centred title in the header |
 | `panel-padding`, `panel-top` | `36px`, `96px` | margin on both sides of the panel text (centred in the panel, its closing line excluded); top of the title |
 | `duration`, `easing` | `1.2`, `ease-in-out` | |
@@ -401,7 +405,7 @@ talk:
 | `[@kim2007nonnegative]`, `[@a; @b]` | `[KC07]`, `[KC07, Mar+20]` |
 | `[@foote2000automatic]{.fullcite}` | the full reference in the text, like `\fullcite` |
 | `[[@grill2015music]]{.refs-only}` | in the slide's reference list but not in the text (e.g. a work only shown in a chart) |
-| `## References {.references-slide}` + `::: {#refs}`/`:::` | the complete bibliography, two columns; the entries that do not fit continue on copies of the slide: "References (1/3)", "(2/3)"… |
+| `## References {.references-slide}` | the complete bibliography, two columns, at the end of the slide (or where a `::: {#refs}` `:::` is); the entries that do not fit continue on copies of the slide: "References (1/3)", "(2/3)"… |
 | `{.no-slide-refs}` on a heading | no reference list on that slide |
 
 - **Labels.** They follow biblatex `alphabetic`: `Foo00`, `MCB22a`, `Mar+20`. A `shorthand = {…}` field in the `.bib` always wins, so a thesis `.bib` gives the same labels as the LaTeX document.
@@ -411,27 +415,30 @@ talk:
 
 ## Audio
 
+A sound is an attribute, `audio=`, on an empty span (a speaker icon), a span with text (the icon, then the text as its label) or a picture (the picture is the button):
+
 ```markdown
-{{< audio media/intro.mp3 >}}                              click to play / stop
-{{< audio media/intro.mp3 autoplay=true delay=0.5 >}}      plays when the slide opens
-{{< audio media/x.mp3 fragment=true autoplay=true >}}      appears on a click, and plays then
-{{< audio media/x.mp3 id=v1 label="Verse 1" loop=true volume=0.6 left=300 top=500 size=40 >}}
+[]{audio=media/intro.mp3}                                 click to play / stop
+[Verse 1]{audio=media/x.mp3 loop=true volume=0.6}         with a label
+[]{audio=media/intro.mp3 play=0 delay=0.5}                plays when the slide opens, after 0.5 s
+[]{audio=media/x.mp3 play=2}                              the icon is there, the sound plays at click 2
+[]{.fragment audio=media/x.mp3 play=2}                    appears at click 2 and plays then
+[]{.absolute left=198 top=178 audio=media/x.mp3 play=1}   at an exact place
+![](media/scissors.png){.absolute left=900 top=440 width=60 audio=media/x.mp3}
+[]{stop=3}                                                every sound stops at click 3
 ```
-
-The speaker icon is drawn by the template (it glows yellow while playing, red when the browser blocks the sound). It is large enough to click (2 em, about 50 px in body text, with a margin around it that also reacts to clicks) and does not push the lines of a list apart. Change its size with `size=` on one icon (px or any CSS length), or for the whole deck with YAML `talk: audio: size: 60px`.
-
-The same icon without the shortcode, e.g. at an exact place: `[]{.absolute .audio-btn left=198 top=178 data-audio="media/x.mp3"}` (an empty span with `.audio-btn` gets the icon). This is what the converter writes for PowerPoint sound objects.
-
-Any element can be a sound button with these attributes (an image keeps its own picture and, like the icon, gets a pointer cursor, a slight zoom on hover and the yellow glow while playing):
 
 | attribute | effect |
 |---|---|
-| `data-audio="file.mp3"` | makes the element a play/stop button |
-| `data-autoplay=true` / `false` | plays when it becomes visible: when its slide opens, or when its fragment appears |
-| `data-autoplay-delay=1` | waits this many seconds before playing |
-| `data-loop`, `data-volume=0.5` | loop, volume |
+| `audio=file.mp3` | makes the element a play / stop button (the empty or text span gets the speaker icon) |
+| `play=N` | plays at click N; `play=0`: when it is shown (its slide opens, or its own fragment appears); on a `.fragment` without `fragment-index`, it also appears at click N |
+| `delay=S` | the sound starts S s after that |
+| `loop=true`, `volume=0.5` | loop, volume |
+| `stop=N` | every sound stops at click N (on any element, or an empty span) |
 
-A sound can also be started on a given click: `play=2` on the icon (the icon is there from the start, the sound plays at click 2), or `[]{.fragment data-play="v1"}` plays the element with `id="v1"`. Something that should appear once that sound has ended takes `delay=end` (see Clicks). `[]{.fragment data-stop-audio=true}` stops every sound on that click.
+Something that should appear once the sound of its click has ended takes `delay=end` (see Clicks): `[]{audio=media/x.mp3 play=1}` and `::: {.fragment fragment-index=1 delay=end}` … `:::` (the spectrograms of the PhD deck).
+
+The speaker icon is drawn by the template (it glows yellow while playing, red when the browser blocks the sound). It is large enough to click (2 em of the text, about 50 px in body text, with a margin around it that also reacts to clicks) and does not push the lines of a list apart. Its size follows the font: `size=` (pt) on one icon, or for the whole deck YAML `talk: audio: size: 60px`. A picture button gets a pointer cursor, a slight zoom on hover and the yellow glow while playing.
 
 YAML defaults: `talk: audio: { autoplay: false, delay: 0, stop-on-slide-change: true, size: 2em }`.
 
@@ -442,7 +449,7 @@ During the talk, press **A** to stop every sound. Browsers refuse sound before t
 The highlight is part of the object, not a second shape laid over it: move or resize the object and its highlight follows (Morph included). In a box with text, the red sits under the text and inside the border; on an image it covers the image. In a grid box or a picture of known size the coloured cells sit exactly on the pixels of the grid lines (nothing bleeds over a line or the border), and two touching coloured cells never show a light seam between them, at any zoom.
 
 ```markdown
-::: {.absolute .matrix left=300 top=170 width=200 height=30 cols=4 hl="1@1; 2@2; 3@3; 4-@4"}
+::: {.absolute .box left=300 top=170 width=200 height=30 cols=4 hl="1@1; 2@2; 3@3; 4-@4"}
 :::
 ![](drums.png){.absolute left=144 top=281 width=270 height=117 hl="2@(37.8,30,6.3,19); 3-@(50.7,30,7,19)"}
 ::: {.absolute .shp left=200 top=400 width=370 height=114 border="1px solid black" rows=6 lines=true hl="1@1; 2@6"}
@@ -491,7 +498,7 @@ The highlight is part of the object, not a second shape laid over it: move or re
   ```markdown
   $$\mathrel{\eqmark{iff}{\Longleftrightarrow}} \hlo[x2]{2-}{teal}{X_{(2)}} \mathrel{\hlo[approx]{3-}{orange}{\approx}} \dots$$
 
-  ::: {.annot to=x2 pos=below dist=58 steps=2- sub="(“unfolding” of the tensor)"}
+  ::: {.annot .fragment fragment-index=2 to=x2 pos=below dist=58 sub="(“unfolding” of the tensor)"}
   Barwise TF matrix
   :::
   ```
@@ -500,9 +507,8 @@ The highlight is part of the object, not a second shape laid over it: move or re
   - **Placement.** The label is placed `pos=below|above|left|right` of its targets, at `dist` px, moved by `shift` px. `x=… y=…` place it at fixed slide coordinates instead.
   - **Arrows.** One arrow is drawn to each target (`to="q gwh"` gives two). They always point at where the parts are, so editing the equation needs no re-alignment. `arrow=fat` (default, translucent like the PowerPoint ones), `thin` or `none`; `dir=from` reverses them (from the targets to the label: "these two lines give F"); `anchor=right` (or `left`, `top`, `bottom`) makes them meet each target at the middle of that side, like TikZ's `east`, instead of where the line from its centre leaves it.
   - **Look.** The colour comes from the target's highlight; set `color=` to override it. `box=false` removes the frame. `size=` sets the font size, and `sub="…"` adds a smaller line under the label.
-  - **Steps.** `steps=` works as for `hl=`.
+  - **Clicks.** The native fragment syntax on the annotation: `.fragment fragment-index=2` (from click 2), `.fragment .fade-in-then-out fragment-index=1` (click 1 only).
 - **Press R** (while preparing a talk) to show every highlight area with its steps, and the grids in blue.
-- **`.matrix`.** A ready-made class for a matrix box: a black frame with its label centred (dimension arrows: see Matrices and tensors).
 - **From PowerPoint.** `_extensions/tools/highlights.py` turns half-transparent red overlay shapes into `hl` on the shape or image under them. It snaps them to a grid when they fit one; other overlays become rectangles in %. Overlays it cannot guess (ellipses over an equation, halos) were rewritten by hand in `_extensions/tools/deck_patches.py`.
 
 ## 3D images (any image or block)
@@ -525,7 +531,8 @@ No hand-drawn SVG: arrows come from the [quarto-arrows](https://emilhvitfeldt.gi
 {{< arrow from="630,412" to="469,434" head=circle head-start=true head-end=false position="absolute" >}}
 ```
 
-- **Arrows between objects** (a graph): give the objects ids and write `[2]{.edge from=b1 to=b2 steps=1-}`: an arrow from the edge of `#b1` to the edge of `#b2`, drawn where they really are, with "2" beside its middle (`shift=` px to its left, `along=` px further along, `color=`, `width=`, `head=`). Both ends follow the objects, so moving a node moves its edges; a second edge over the same pair at a later step (`[]{.edge from=b1 to=b2 steps=2- color=dark}`) recolours it.
+- **Arrows between objects** (a graph): give the objects ids and write an annotation with `from=`: `[2]{.annot .fragment fragment-index=1 from=b1 to=b2}`: an arrow from the edge of `#b1` to the edge of `#b2`, drawn where they really are, with "2" beside its middle (`shift=` px to its left, `along=` px further along, `color=`, `width=`, `head=`, or `arrow=thin|fat`). Both ends follow the objects, so moving a node moves its edges; a second one over the same pair at a later click (`[]{.annot .fragment fragment-index=2 from=b1 to=b2 color=dark}`) recolours it.
+- **Lines without heads** are `.sep` boxes, not arrows (quarto-arrows is used for arrows only).
 
 - Coordinates are slide pixels (1280 × 720). `to` is the **base** of the arrowhead: the tip lies `size × width` px further.
 - `color="var(--talk-accent)"` uses a theme colour. Other options: `dash="4 8"`, `curve=0.3`, `bend=`, `label=`, `fragment=true` (drawn at a click).
@@ -554,16 +561,16 @@ No hand-drawn SVG: arrows come from the [quarto-arrows](https://emilhvitfeldt.gi
 ### Matrices and tensors
 
 ```markdown
-[$$X$$]{.absolute .matrix left=201 top=412 width=373 height=114 rows=6 lines=true dim-left=b dim-bottom=tf}
-[$\mathscr{X}$]{.absolute .tb .va-ctr left=555 top=242 width=222 height=186 align=center shape=cube depth=54 dim-left=f dim-bottom=t dim-depth=b}
-[$$Q$$]{.absolute .tb .va-ctr left=1047 top=144 width=69 height=66 align=center shape=parallelogram slant=51 dim-depth=b dim-bottom="r_b"}
-[]{.absolute .matrix left=615 top=350 width=66 height=125 stack="shade1 shade2 shade3 shade4 shade5 shade6" depth=80 lift=68 dim-left=f dim-bottom=t dim-depth=b}
+[$$X$$]{.absolute .box left=201 top=412 width=373 height=114 rows=6 lines=true dim-left=b dim-bottom=tf}
+[$\mathscr{X}$]{.absolute .tb left=555 top=242 width=222 height=186 align=center valign=center shape=cube depth=54 dim-left=f dim-bottom=t dim-depth=b}
+[$$Q$$]{.absolute .tb left=1047 top=144 width=69 height=66 align=center valign=center shape=parallelogram slant=51 dim-depth=b dim-bottom="r_b"}
+[]{.absolute .box left=615 top=350 width=66 height=125 stack="shade1 shade2 shade3 shade4 shade5 shade6" depth=80 lift=68 dim-left=f dim-bottom=t dim-depth=b}
 ```
 
-- `.matrix`: a framed box with its label centred; `rows=` / `cols=` + `lines=true` divide it (see Grid boxes), `cells="c1 c2 …"` colours the cells.
+- A matrix is a `.box` (framed, label centred, 18 pt like every box: `size=` to change it); `rows=` / `cols=` + `lines=true` divide it (see Grid boxes), `cells="c1 c2 …"` colours the cells. Write every matrix this way, so they all look the same.
 - `dim-left=`, `dim-right=`, `dim-top=`, `dim-bottom=`: a dimension arrow along that side (14 px outside, `dim-gap=`), its label just beyond it. The label is maths (`r_b` reads as $r_b$); write `$…$` or plain text otherwise. It is 18 pt whatever the box's font; `dim-size=14` changes it. On a cube the left / bottom arrows follow the front face and `dim-depth=` runs along the top-left edge; on a parallelogram it follows the slanted side; on a stack it goes from the front slice to the back one. For a picture, wrap it in a `::: {.absolute left= top= width= height= dim-left=b}` box.
-- `stack="c1 … cn"`: a stack of n slices (a tensor as a pile of matrices), the first colour in front, the others `depth=` px to the right and `lift=` px up. With `stack-id=tfb` the slices get `data-id` tfb-1 … tfb-n, and the cells of a grid box with `cell-id=tfb` on the previous slide morph into them (`auto-animate=true` on both slides); `dim-id=tfb` lets the arrows glide along (`data-id` tfb-left, tfb-bottom).
-- `.rot-l` / `.rot-r` turn the content of a box by a quarter turn (a column vector's label in a tall thin box).
+- `stack="c1 … cn"`: a stack of n slices (a tensor as a pile of matrices), the first colour in front, the others `depth=` px to the right and `lift=` px up. `morph-id=tfb` names the parts a box generates, for a Morph (`auto-animate=true` on both slides): the slices of a stack (`data-id` tfb-1 … tfb-n), the cells of a grid box (tfb-1…), the dimension arrows (tfb-left, tfb-bottom…; not the depth one). So the cells of a bar with `morph-id=tfb` fly into the slices of a stack with `morph-id=tfb` on the next slide, and its arrows glide along.
+- `.rot-l` / `.rot-r` turn the content of a box by a quarter turn (a column vector's label in a tall thin box, the name in a vertical arrow): it is laid out along the box's long side, then turned.
 
 - One line per object: a span `[text]{.absolute …}` is a box like a `::: {.absolute …}` div (use the div for several paragraphs or a list).
 - `shape=` draws an outline behind the content: `arrow-right`, `arrow-left`, `arrow-up`, `arrow-down` (`head=`, `shaft=` in %), `shrink` / `grow` (trapezoid narrowing / widening to the right, `taper=` %), `parallelogram` (`slant=` %), `cube` (`depth=` px). `background=` fills it, `border="2px solid accent"` draws it.
@@ -583,7 +590,7 @@ $\xrightarrow{\;a()\;}$
 
 - **One block per click**: `::: {.fragment fragment-index=2}` … `:::` around everything that appears at click 2 (`.fade-in-then-out`: shown at that click only; `delay=2` on the block delays it all).
 - **Motion**: `::: {.fragment .move fragment-index=1 dx=-320 dy=0}` … `:::` moves its content at that click.
-- **Sounds**: `[]{.absolute .audio-btn left=357 top=237 data-audio="media/x.mp3" play=1}`: the icon is there from the start, the sound plays at click 1.
+- **Sounds**: `[]{.absolute left=357 top=237 audio=media/x.mp3 play=1}`: the icon is there from the start, the sound plays at click 1 (see Audio).
 - **Recaps**: `::: {.static}` … `:::` shows its content in its final state, without clicks, e.g. around `{{< include _outline.qmd >}}` to show again a slide that was built click by click.
 
 ## Titles, empty lines
@@ -594,4 +601,4 @@ $\xrightarrow{\;a()\;}$
 
 ## Files
 
-`_extension.yml` (format defaults), `talk.scss` (theme and all styles; colours and sizes are CSS variables), `talk.lua` (sections, side panels, citations, highlights, tilt, short attributes, cards, separators, dimension arrows, stacks, edges, appendix, TOC, YAML options), `audio.lua` (shortcode), `audio_icon.lua` (the speaker icon, shared by both filters), `talk.js` (audio, letter-box bleed, morph matching, R key for highlights, slide-number labels), `alphabetic.csl`, `fonts/` + `fonts.css`, `katex/` (offline maths).
+`_extension.yml` (format defaults), `talk.scss` (theme and all styles; colours and sizes are CSS variables), `talk.lua` (sections, side panels, citations, highlights, annotations, tilt, short attributes, sounds, cards, separators, dimension arrows, stacks, appendix, TOC, YAML options), `talk.js` (audio, waiting fragments, annotations, letter-box bleed, morph matching, R key for highlights, slide-number labels, references pagination), `alphabetic.csl`, `fonts/` + `fonts.css`, `katex/` (offline maths).

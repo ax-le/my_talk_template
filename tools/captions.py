@@ -19,26 +19,11 @@ import sys
 from collections import Counter
 
 sys.path.insert(0, __import__("os").path.dirname(__file__))
-from tidy import parse, fmt          # noqa: E402
+from shared import parse, fmt, BLOCK, style_of, px as num          # noqa: E402
 
-BLOCK = re.compile(r'^::: \{([^{}\n]*)\}\n((?:(?!:::)[^\n]*\n)*?):::\n', re.M)
 IMAGE = re.compile(r'^!\[\]\(([^)\s]+)\)\{([^{}\n]*)\}[ \t]*\n', re.M)
 GAP = 30           # px between the text box and the picture
 PAD = 9.6          # inner left margin of a converted text box
-
-
-def num(v):
-    m = re.fullmatch(r'(-?[\d.]+)(px)?', v or "")
-    return float(m.group(1)) if m else None
-
-
-def style_of(d):
-    out = {}
-    for part in d.get("style", "").split(";"):
-        if ":" in part:
-            k, v = part.split(":", 1)
-            out[k.strip()] = v.strip()
-    return out
 
 
 def texts(slide, ids):

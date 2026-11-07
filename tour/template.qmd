@@ -30,7 +30,7 @@ talk:
     border-width: 21px            # frame of section headers, line closing the panels
     duration: 1.2
   audio:
-    autoplay: false               # default for sounds without data-autoplay
+    autoplay: false               # true: every sound plays when it is shown (as play=0)
     delay: 0
     stop-on-slide-change: true
   citations:
@@ -54,7 +54,7 @@ talk:
      "test slide", and the next slide is 1. (Its content is free: three clicks and a sound to try
      the clicker and the speakers; clicks and sounds are checked on their own slides.) -->
 
-{{< audio media/media5.mp3 label="Sound check" >}}
+[Sound check]{audio=media/media5.mp3}
 
 ::: {.absolute .tb .body .incremental left=144 top=240 width=1008 height=376}
 - First
@@ -196,7 +196,7 @@ Row labels
 - [B']{.cell .fragment background=accent}
 :::
 
-::: {.absolute .matrix left=150 top=420 width=150 height=120 cols=3 rows=3 lines=true cells="shade1 shade2 shade3 shade2 shade3 shade4 shade3 shade4 shade5"}
+::: {.absolute .box left=150 top=420 width=150 height=120 cols=3 rows=3 lines=true cells="shade1 shade2 shade3 shade2 shade3 shade4 shade3 shade4 shade5"}
 :::
 
 ::: {.absolute left=340 top=420 width=820 size=14}
@@ -352,9 +352,9 @@ CSS variables `--talk-spcbN` (before), `--talk-spca` (after), `--talk-list-lh`.
 
 <!-- EXPECT: three columns of equal width, 40 px apart (default gap), a thin line in the middle of
      each gap (lines=true); below, two columns 30 % / 70 % with gap=80, both 200 px tall: the left
-     one's two blocks spread evenly over that height (.va-spread), the right one's text sits at the
-     bottom (.va-b). Native Quarto syntax, plus gap= / lines= on .columns and height= / .va-ctr
-     .va-b .va-spread on a column. -->
+     one's two blocks spread evenly over that height (valign=spread), the right one's text sits at the
+     bottom (valign=bottom). Native Quarto syntax, plus gap= / lines= on .columns and height= /
+     valign=top|center|bottom|spread on a column. -->
 
 :::: {.columns lines=true}
 ::: {.column}
@@ -374,13 +374,13 @@ CSS variables `--talk-spcbN` (before), `--talk-spca` (after), `--talk-list-lh`.
 &nbsp;
 
 :::: {.columns gap=80}
-::: {.column .va-spread width="30%" height=200}
+::: {.column width="30%" height=200 valign=spread}
 `width="30%"`, `gap=80`
 
-`.va-spread height=200`
+`valign=spread height=200`
 :::
-::: {.column .va-b width="70%" height=200}
-`:::: {.columns gap=80}` then one `::: {.column width=…}` per column (any content: lists, pictures, boxes, maths); `.va-b` puts this text at the bottom.
+::: {.column width="70%" height=200 valign=bottom}
+`:::: {.columns gap=80}` then one `::: {.column width=…}` per column (any content: lists, pictures, boxes, maths); `valign=bottom` puts this text at the bottom.
 :::
 ::::
 
@@ -491,52 +491,52 @@ $\xrightarrow{\;a()\;}$
      right) and their labels in maths, 14 pt (dim-size=14; 18 pt elsewhere); a cube "𝒳" with f (left
      of the front face), t (under it) and b along the top-left edge; a parallelogram "Q" with b along
      its slanted side and r_b under it; a 6-cell bar whose cells are coloured (cells=) with its f / t
-     arrows. On the next slide (morph) the cells of the bar fly into the slices of a stack (cell-id /
-     stack-id "bar") and the f / t arrows glide with them (dim-id "bar"). -->
+     arrows. On the next slide (morph) the cells of the bar fly into the slices of a stack and the
+     f / t arrows glide with them (the same morph-id "bar" on the bar, on its arrows and on the
+     stack). -->
 
-[$$X$$]{.absolute .matrix left=144 top=200 width=300 height=110 rows=6 lines=true dim-left=b dim-bottom=tf dim-size=14}
+[$$X$$]{.absolute .box left=144 top=200 width=300 height=110 rows=6 lines=true dim-left=b dim-bottom=tf dim-size=14}
 
-::: {.absolute .tb .va-ctr left=560 top=180 width=200 height=160 align=center shape=cube depth=50 dim-left=f dim-bottom=t dim-depth=b}
+::: {.absolute .tb left=560 top=180 width=200 height=160 align=center shape=cube depth=50 dim-left=f dim-bottom=t dim-depth=b valign=center}
 $\mathscr{X}$
 :::
 
-[$$Q$$]{.absolute .tb .va-ctr left=900 top=190 width=90 height=80 align=center shape=parallelogram slant=45 dim-depth=b dim-bottom="r_b"}
+[$$Q$$]{.absolute .tb left=900 top=190 width=90 height=80 align=center shape=parallelogram slant=45 dim-depth=b dim-bottom="r_b" valign=center}
 
-::: {.absolute left=144 top=420 width=360 height=110 border="1px solid black" cols=6 lines=true cells="shade1 shade2 shade3 shade4 shade5 shade6" cell-id=bar}
+::: {.absolute left=144 top=420 width=360 height=110 border="1px solid black" cols=6 lines=true cells="shade1 shade2 shade3 shade4 shade5 shade6" morph-id=bar}
 :::
-[]{.absolute left=144 top=420 width=60 height=110 dim-left=f dim-bottom=t dim-id=bar}
+[]{.absolute left=144 top=420 width=60 height=110 dim-left=f dim-bottom=t morph-id=bar}
 
 ::: {.absolute left=560 top=400 width=600 size=14}
-`[$X$]{.absolute .matrix … rows=6 lines=true dim-left=b dim-bottom=tf}` · on a cube / stack also
+`[$X$]{.absolute .box … rows=6 lines=true dim-left=b dim-bottom=tf}` · on a cube / stack also
 `dim-depth=`, on a parallelogram the depth arrow follows the slanted side · `dim-top=`, `dim-right=`
-· labels are maths (`r_b` → $r_b$; `$…$` or text otherwise), `dim-size=` pt · `cell-id=P` gives the
-cells of a grid box `data-id` P-1, P-2… · `dim-id=P` names the arrows P-left, P-bottom…
+· labels are maths (`r_b` → $r_b$; `$…$` or text otherwise), `dim-size=` pt · `morph-id=P` names the
+parts a box generates for a Morph: its cells (P-1, P-2…), its stack slices (P-1…), its arrows (P-left…)
 :::
 
 ## Matrices and tensors {auto-animate=true}
 
-[]{.absolute .matrix left=400 top=300 width=60 height=110 stack="shade1 shade2 shade3 shade4 shade5 shade6" stack-id=bar depth=80 lift=70 dim-left=f dim-bottom=t dim-depth=b dim-id=bar}
+[]{.absolute .box left=400 top=300 width=60 height=110 stack="shade1 shade2 shade3 shade4 shade5 shade6" depth=80 lift=70 dim-left=f dim-bottom=t dim-depth=b morph-id=bar}
 
 ::: {.absolute left=560 top=300 width=600 size=14}
-`[]{.absolute .matrix … stack="c1 … cn" stack-id=P depth=80 lift=70 dim-left=f dim-bottom=t dim-depth=b dim-id=P}`:
+`[]{.absolute .box … stack="c1 … cn" morph-id=P depth=80 lift=70 dim-left=f dim-bottom=t dim-depth=b}`:
 a stack of n slices (the first one in front, the others `depth` px to the right and `lift` px up).
 :::
 
 ## Arrows
 
-<!-- EXPECT: a thin black arrow, a thick accent line without head, a bent arrow (one waypoint,
+<!-- EXPECT: a thin black arrow, a bent arrow (one waypoint,
      sharp corner: smooth=false) and a connector with a dot at its start (head=circle head-start)
      are always visible; at click 1 an accent arrow is drawn (fragment=true). -->
 
 {{< arrow from="150,230" to="450,230" width=1 size=6 position="absolute" >}}
-{{< arrow from="150,300" to="450,300" color="var(--talk-accent)" width=4 head=none position="absolute" >}}
 {{< arrow from="550,230" to="850,360" waypoints="850,230" smooth=false width=3 size=4 position="absolute" >}}
 {{< arrow from="150,380" to="450,380" color="var(--hl-shade5)" width=5 head=circle head-start=true head-end=false size=4 position="absolute" >}}
 {{< arrow from="150,480" to="450,440" color="var(--talk-accent)" width=2 fragment=true fragment-index=1 position="absolute" >}}
 
 ::: {.absolute left=150 top=540 width=1000 size=14}
 `{{</* arrow from="x,y" to="x,y" position="absolute" … */>}}` (slide px; quarto-arrows extension): `width=` `size=`
-(head) `color="var(--talk-accent)"` / `"var(--hl-NAME)"` `head=none|circle|…` `head-start=` `head-end=`
+(head) `color="var(--talk-accent)"` / `"var(--hl-NAME)"` `head=circle|…` `head-start=` `head-end=` · a line without head is a `.sep`
 `waypoints="x,y …" smooth=false` `fragment=true fragment-index=N`
 :::
 
@@ -624,11 +624,11 @@ Subtitle (not shown in the simple style) [@marmoret2022barwise]
      lines) fly apart into three separate boxes (each cell has its own data-id). Native
      Quarto/reveal feature. -->
 
-::: {.absolute .matrix left=150 top=260 width=120 height=160 background=background data-id=slice1}
+::: {.absolute .box left=150 top=260 width=120 height=160 background=background data-id=slice1}
 $X_1$
 :::
 
-::: {.absolute .matrix left=300 top=260 width=120 height=160 background=background data-id=slice2}
+::: {.absolute .box left=300 top=260 width=120 height=160 background=background data-id=slice2}
 $X_2$
 :::
 
@@ -646,11 +646,11 @@ $X_2$
 
 ## Morph (auto-animate) {auto-animate=true}
 
-::: {.absolute .matrix left=150 top=200 width=80 height=100 background=background data-id=slice1}
+::: {.absolute .box left=150 top=200 width=80 height=100 background=background data-id=slice1}
 $X_1$
 :::
 
-::: {.absolute .matrix left=170 top=220 width=80 height=100 background=background data-id=slice2}
+::: {.absolute .box left=170 top=220 width=80 height=100 background=background data-id=slice2}
 $X_2$
 :::
 
@@ -660,15 +660,15 @@ $X_2$
 
 ![](media/image86_c999e51.png){.absolute left=640 top=330 width=540 height=234 data-id=picture hl="0-@(37.8,30,6.3,19)"}
 
-::: {.absolute .matrix left=640 top=600 width=100 height=60 data-id=slice-a}
+::: {.absolute .box left=640 top=600 width=100 height=60 data-id=slice-a}
 1
 :::
 
-::: {.absolute .matrix left=770 top=600 width=100 height=60 background=accent data-id=slice-b}
+::: {.absolute .box left=770 top=600 width=100 height=60 background=accent data-id=slice-b}
 2
 :::
 
-::: {.absolute .matrix left=900 top=600 width=100 height=60 data-id=slice-c}
+::: {.absolute .box left=900 top=600 width=100 height=60 data-id=slice-c}
 3
 :::
 
@@ -720,7 +720,7 @@ a sound (their slides) · `.fade-after`: shown when the slide arrives, fades out
 []{.absolute left=800 top=200 width=200 height=20 background="#999"}
 []{.absolute left=800 top=230 width=200 height=20 background="#bbb"}
 []{.absolute left=800 top=260 width=200 height=20 background="#ddd"}
-[moves at click 1]{.absolute .matrix left=800 top=310 width=200 height=70}
+[moves at click 1]{.absolute .box left=800 top=310 width=200 height=70}
 :::
 
 [arrived (`delay=move`)]{.absolute .tb .fragment left=150 top=430 size=22 fragment-index=1 delay=move}
@@ -753,29 +753,28 @@ same click: it appears when the move has ended
 
 <!-- EXPECT: icon 1 plays on click; icon 2 plays when the slide opens (after 0.5 s); icon 3
      appears and plays at click 1; icon 4 loops at 60 % volume, with its label; the scissors
-     picture is itself a play button (data-audio). A stops everything; blocked sounds turn red. -->
+     picture is itself a play button (audio= on the image). A stops everything; blocked sounds turn red. -->
 
-- Click to play: {{< audio media/media5.mp3 label="Sound one" >}}
-- Plays when the slide opens: {{< audio media/media6.mp3 autoplay=true delay=0.5 >}}
-- Appears and plays on click 1: {{< audio media/media10.mp3 fragment=1 autoplay=true >}}
-- Loop, volume, label: {{< audio media/media11.mp3 label="Sound two" loop=true volume=0.6 >}}
-- Any element can be a button (`data-audio`):
+- Click to play: [Sound one]{audio=media/media5.mp3}
+- Plays when the slide opens (`play=0 delay=0.5`): []{audio=media/media6.mp3 play=0 delay=0.5}
+- Appears and plays on click 1 (`.fragment play=1`): []{.fragment audio=media/media10.mp3 play=1}
+- Loop, volume, label: [Sound two]{audio=media/media11.mp3 loop=true volume=0.6}
+- A picture can be the button (`audio=` on it):
 
-![](media/ciseaux.png){.absolute left=900 top=440 width=60 height=60 data-audio="media/media12.mp3"}
+![](media/ciseaux.png){.absolute left=900 top=440 width=60 height=60 audio=media/media12.mp3}
 
 ## Audio: sounds at clicks
 
-<!-- EXPECT: no sound when the slide opens. Click 1 starts the "v2" sound (a trigger
-     []{.fragment data-play="v2"}); click 2 stops all sounds (data-stop-audio); click 3 plays the
+<!-- EXPECT: no sound when the slide opens. Click 1 starts the "Sound two" sound (play=1 on its
+     icon); click 2 stops all sounds ([]{stop=2}); click 3 plays the
      sound of the last icon (play=3), and its "→ …" text appears only when that sound ends
      (delay=end, about 4 s; at once if A stops it); going back hides it. -->
 
-- Started by click 1: {{< audio media/media11.mp3 id=v2 label="Sound two" >}}
+- Started by click 1: [Sound two]{audio=media/media11.mp3 play=1}
 - Stopped by click 2
-- Plays at click 3 (`play=3`): []{.audio-btn data-audio="media/media2.mp3" play=3} [→ shown when the sound ends (`delay=end`)]{.fragment fragment-index=3 delay=end}
+- Plays at click 3 (`play=3`): []{audio=media/media2.mp3 play=3} [→ shown when the sound ends (`delay=end`)]{.fragment fragment-index=3 delay=end}
 
-[]{.fragment fragment-index=1 data-play="v2"}
-[]{.fragment fragment-index=2 data-stop-audio=true}
+[]{stop=2}
 
 ## Audio: icons in columns
 
@@ -784,13 +783,13 @@ same click: it appears when the move has ended
      length of the item's text. -->
 
 ::: {.absolute .tb .body left=144 top=200 width=700 audio-col="300 380"}
-- Short {{< audio media/media5.mp3 >}} {{< audio media/media6.mp3 >}}
+- Short []{audio=media/media5.mp3} []{audio=media/media6.mp3}
   - a sub-item
-- A longer item {{< audio media/media11.mp3 >}}
+- A longer item []{audio=media/media11.mp3}
 :::
 
 ::: {.absolute left=144 top=460 width=1000 size=14}
-`audio-col="x1 x2"` on the box: the icons of each item (shortcode or `.audio-btn`) sit x px from the text's left edge
+`audio-col="x1 x2"` on the box: the icons of each item (`[]{audio=…}`) sit x px from the text's left edge
 :::
 
 ## Citations
@@ -819,26 +818,26 @@ A citation [@goto2002rwc] without the per-slide list.
      opens. H gets a rounded halo (hl-radius=20, hl-pad=10) at click 4. Press R: every area, its
      steps and the grids are outlined. -->
 
-::: {.absolute .matrix left=150 top=230 width=90 height=200 cols=3 hl="1@1; 2@2; 3-@3"}
+::: {.absolute .box left=150 top=230 width=90 height=200 cols=3 hl="1@1; 2@2; 3-@3"}
 $W$
 :::
 
-::: {.absolute .matrix left=300 top=230 width=200 height=200 cols=3 rows=3 lines=true hl="0@1,1; 1@2,2; 2@*,3 teal; 3-@1-2,1-2 custom"}
+::: {.absolute .box left=300 top=230 width=200 height=200 cols=3 rows=3 lines=true hl="0@1,1; 1@2,2; 2@*,3 teal; 3-@1-2,1-2 custom"}
 $G$
 :::
 
-::: {.absolute .matrix left=300 top=170 width=200 height=30 cols=4 hl="1@1; 2@2; 3@3; 4-@4"}
+::: {.absolute .box left=300 top=170 width=200 height=30 cols=4 hl="1@1; 2@2; 3@3; 4-@4"}
 :::
 
-::: {.absolute .matrix left=560 top=230 width=250 height=90 hl="4 teal" hl-radius=20 hl-pad=10 size=18}
+::: {.absolute .box left=560 top=230 width=250 height=90 hl="4 teal" hl-radius=20 hl-pad=10 size=18}
 $H$: whole object, halo
 :::
 
-::: {.absolute .matrix left=560 top=360 width=240 height=70 hl=1-2 hl-style=outline hl-color="#4A845E"}
+::: {.absolute .box left=560 top=360 width=240 height=70 hl=1-2 hl-style=outline hl-color="#4A845E"}
 outline, own colour
 :::
 
-::: {.absolute .matrix left=560 top=460 width=240 height=70 hl="2-3 purple" hl-shape=ellipse hl-opacity=0.8}
+::: {.absolute .box left=560 top=460 width=240 height=70 hl="2-3 purple" hl-shape=ellipse hl-opacity=0.8}
 ellipse, opacity 0.8
 :::
 
@@ -902,35 +901,35 @@ annotations) · `\tick{colour}` · colours: palette or theme names
 $$\mathrel{\eqmark{iff}{\Longleftrightarrow}} \hlo[x2]{1-}{teal}{X_{(2)}} \mathrel{\eqmark{approx}{\approx}} \eqmark{q}{Q}\,\eqmark{gwh}{G_{(2)}(W \mathbin{\eqmark{kron}{\otimes}} H)^T}$$
 :::
 
-::: {.annot to=iff pos=below dist=4 steps=0- arrow=none box=false color=black}
+::: {.annot to=iff pos=below dist=4 arrow=none box=false color=black}
 “no arrow, no box”
 :::
 
-::: {.annot to=kron pos=above dist=40 steps=0- arrow=thin box=false color=black size=18}
+::: {.annot to=kron pos=above dist=40 arrow=thin box=false color=black size=18}
 \\eqmark: named, not highlighted
 :::
 
-::: {.annot to=x2 pos=below dist=60 steps=1- sub="(sub-label)"}
+::: {.annot .fragment to=x2 pos=below dist=60 sub="(sub-label)" fragment-index=1}
 pos=below, colour of the highlight
 :::
 
-::: {.annot to=approx pos=above dist=60 steps=2-}
+::: {.annot .fragment to=approx pos=above dist=60 fragment-index=2}
 pos=above
 :::
 
-::: {.annot to="q gwh" pos=below dist=70 shift=120 steps=3-}
+::: {.annot .fragment to="q gwh" pos=below dist=70 shift=120 fragment-index=3}
 two targets, two arrows
 :::
 
-::: {#demo-box .absolute .matrix left=150 top=520 width=160 height=90 hl="4- navy" hl-shape=round hl-pad=8}
+::: {#demo-box .absolute .box left=150 top=520 width=160 height=90 hl="4- navy" hl-shape=round hl-pad=8}
 a box
 :::
 
-::: {.annot to=demo-box pos=right dist=80 steps=4- color=navy size=20}
+::: {.annot .fragment to=demo-box pos=right dist=80 color=navy size=20 fragment-index=4}
 to= an element id, pos=right
 :::
 
-::: {.annot to=demo-box x=700 y=600 steps=5- color=brown size=20}
+::: {.annot .fragment to=demo-box x=700 y=600 color=brown size=20 fragment-index=5}
 fixed place (x, y)
 :::
 
@@ -945,7 +944,7 @@ fixed place (x, y)
   - [Ratio B $= \frac{\tick{lime}}{\tick{black}}$]{#eq-r}
 :::
 
-::: {.annot to="eq-p eq-r" pos=right dist=120 steps=1- dir=from anchor=right arrow=thin box=false color=accent}
+::: {.annot .fragment to="eq-p eq-r" pos=right dist=120 dir=from anchor=right arrow=thin box=false color=accent fragment-index=1}
 [$F$]{color=black size=28}
 :::
 
@@ -964,13 +963,13 @@ of the targets (`anchor=right|left|top|bottom`)
 [$b$[$\,:2$]{.fragment fragment-index=1}]{#nb .absolute .filled .nowrap left=400 top=160 width=80 height=70 color=white radius=50%}
 [$c$]{#nc .absolute .filled .nowrap left=400 top=400 width=70 height=70 color=white radius=50%}
 
-[2]{.edge from=na to=nb steps=1-}
-[5]{.edge from=nb to=nc steps=2-}
-[1]{.edge from=na to=nc steps=2- shift=-18}
+[2]{.annot .fragment from=na to=nb fragment-index=1}
+[5]{.annot .fragment from=nb to=nc fragment-index=2}
+[1]{.annot .fragment from=na to=nc shift=-18 fragment-index=2}
 
 ::: {.absolute left=150 top=540 width=1000 size=14}
-`[label]{.edge from=ID to=ID steps= color= width= head= shift= along= size=}`: an arrow from the edge of #from to
-the edge of #to, the label beside its middle (`shift` px to its left, `along` px further)
+`[label]{.annot from=ID to=ID color= width= head= shift= along= size=}` (an annotation with `from=`): an arrow from the
+edge of #from to the edge of #to, the label beside its middle (`shift` px to its left, `along` px further); clicks: `.fragment`
 :::
 
 ## 3D images
@@ -1024,7 +1023,5 @@ More backup material.
      at 30 px (style=, to force it; 12.5 px by default) the eight entries do not fit: the ones that
      would spill out move to a copy of this slide, "References (1/2)" then "(2/2)" (talk.js measures
      the overflow in the browser, so this holds whatever the entries' lengths). After the appendix
-     marker too: counters "additional-3", "additional-4". -->
-
-::: {#refs}
-:::
+     marker too: counters "additional-3", "additional-4". The list is added by .references-slide
+     (a ::: {#refs} ::: div would place it elsewhere). -->

@@ -1,29 +1,33 @@
-/* talk.js — audio for reveal.js decks (part of the "talk" Quarto extension)
+/* talk.js — browser side of the "talk" Quarto extension. Modules (each an IIFE):
+     (1) KaTeX patch: \hl / \hlo / \tick macros, equation highlights moved into their parts
+     (2) annotations and edges: labels and arrows laid out from where their targets really are
+     (3) audio (data-audio buttons, play / stop triggers, autoplay), auto-animate matcher,
+         letter-box bleed of section slides, keys A (stop sounds) and R (highlight areas)
+     (4) slide-number labels of uncounted slides (test slide, additional-N)
+     (5) push transition: .talk-pushing while two slides move
+     (6) waiting: delay=S, delay=move, delay=end (one module for every delayed appearance)
+     (7) references slide pagination
+   Audio (module 3), written by talk.lua from audio= play= stop= delay= loop= volume=: any element
+   with data-audio="file.mp3" is a play/stop button; data-autoplay, data-autoplay-delay="1",
+   data-loop, data-volume="0.5"; triggers <span class="fragment" data-play="id"> / data-stop-audio;
+   YAML talk: audio: {autoplay, delay, stop-on-slide-change}. */
 
-   Any element with  data-audio="file.mp3"  becomes a play/stop button.
-   Options (HTML attributes, or shortcode arguments of {{< audio >}}):
-     data-autoplay            play automatically when the element becomes visible:
-                              when its slide opens, or when its fragment appears.
-                              data-autoplay="false" disables it even if the global default is on.
-     data-autoplay-delay="1"  wait (seconds) before auto-playing
-     data-loop                loop the sound
-     data-volume="0.5"        0 … 1
-   After the sound:  {.fragment delay=end}  appears when the sound playing at its click ends
-                     (or is stopped); at once if no sound plays.
-   Trigger fragments:
-     <span class="fragment" data-play="intro"></span>   plays the audio element with id="intro"
-     <span class="fragment" data-stop-audio></span>     stops every sound
-   Global defaults (YAML):  talk: audio: { autoplay: false, delay: 0, stop-on-slide-change: true }
-   Keyboard: "A" stops all sounds.
-*/
-/* ---- highlights inside equations ------------------------------------------------
+// run fn once reveal.js is ready (at once when it already is); evenWithout: also when the page
+// has no reveal.js at all
+function talkWhenReady(fn, evenWithout) {
+  const go = () => {
+    if (!window.Reveal) { if (evenWithout) fn(); return; }
+    if (Reveal.isReady && Reveal.isReady()) fn(); else Reveal.on('ready', fn);
+  };
+  if (document.readyState === 'complete') go(); else window.addEventListener('load', go);
+}
+
+/* ---- (1) highlights inside equations ---------------------------------------------
    \hl{STEPS}{colour}{part}   rounded box behind a part of an equation
    \hlo{STEPS}{colour}{part}  oval
    STEPS as for hl=…: 2, 2-4, 2-, 0 ; colour: a name of the highlight palette (teal, purple…)
    KaTeX marks the part with \htmlData; the highlight is then added as fragments.         */
 (function () {
-  // theme colour names, as in talk.lua color_value (palette names: --hl-NAME)
-  const THEME = { text: '--talk-text', title: '--talk-title', accent: '--talk-accent', background: '--talk-bg', bar: '--talk-bar' };
   const MACROS = {
     '\\hl': '\\htmlData{hl=#1,hlc=#2}{#3}',
     '\\hlo': '\\htmlData{hl=#1,hlc=#2,hlshape=oval}{#3}',
@@ -39,7 +43,8 @@
       const c = (el.getAttribute('data-hlc') || '').trim();
       el.classList.add('hl-host', 'hl-under');
       if (el.getAttribute('data-hlshape') === 'oval') el.classList.add('hl-oval');
-      if (c) el.style.setProperty('--hl-c', /^#|\(/.test(c) ? c : THEME[c] ? `var(${THEME[c]})` : `var(--hl-${c}, ${c})`);
+      // a colour name → var(--hl-NAME, NAME), as talk.lua color_value (theme names included)
+      if (c) el.style.setProperty('--hl-c', /^#|\(/.test(c) ? c : `var(--hl-${c}, ${c})`);
       if (slot.getAttribute('data-name')) el.setAttribute('data-anchor', slot.getAttribute('data-name'));
       slot.classList.add('placed');
       el.appendChild(slot);
@@ -68,7 +73,7 @@
   }
 })();
 
-/* ---- annotations: ::: {.annot to="name …" pos=below} label :::  -------------------------
+/* ---- (2) annotations (and edges, .annot from=): ::: {.annot to="name …" pos=below} label :::  -------------------------
    The label is placed next to the named parts (\hl[name]{…}, \hlo[name]{…}, \eqmark{name}{…},
    or any element id) and an arrow is drawn to each of them, from where they really are.     */
 (function () {
@@ -108,19 +113,28 @@
     svg.setAttribute('width', sec.offsetWidth); svg.setAttribute('height', sec.offsetHeight);
     return svg;
   }
-  // [label]{.edge from=a to=b}: an arrow from the edge of #a to the edge of #b, label beside its middle
+  // arrow shape: arrow=fat|thin (presets: shaft width, head length, head half-width), width= / head=
+  // (px) override them; without arrow= an edge is 4 px wide with a head 3.5 × as long
+  const PRESETS = { fat: [9, 16, 11], thin: [2.5, 9, 5] };
+  function shape(a, dflt) {
+    const p = PRESETS[a.getAttribute('data-arrow') || dflt];
+    const W = parseFloat(a.getAttribute('data-width') || ''), Hd = parseFloat(a.getAttribute('data-head') || '');
+    if (p && !W && !Hd) return p;
+    const w = W || (p ? p[0] : 4), head = Hd || w * 3.5;
+    return [w, head, head * 0.6];
+  }
+  // [label]{.annot from=a to=b}: an arrow from the edge of #a to the edge of #b, label beside its middle
   function layoutEdge(sec, a, sr, k) {
     const A = target(sec, a.getAttribute('data-from') || ''), B = target(sec, a.getAttribute('data-to') || '');
-    const lab = a.querySelector('.edge-label');
+    const lab = a.querySelector('.annot-edge-label');
     let svg = a.querySelector(':scope > svg.annot-arrows');
     if (svg) svg.remove();
     if (!A || !B || !lab) return;
     const bA = box(A, sr, k), bB = box(B, sr, k), gap = parseFloat(a.getAttribute('data-gap') || '2');
     const [x2, y2] = exitPoint(bB, cx(bA), cy(bA), gap);
     const [x1, y1] = exitPoint(bA, x2, y2, gap);
-    const w = parseFloat(a.getAttribute('data-width') || '4'), head = parseFloat(a.getAttribute('data-head') || '') || w * 3.5;
     svg = svgFor(sec, 'edge-arrow');
-    const p = arrow(x1, y1, x2, y2, w, head, head * 0.6);
+    const p = arrow(x1, y1, x2, y2, ...shape(a, null));
     if (p) svg.appendChild(p);
     a.insertBefore(svg, a.firstChild);
     // the label: at the middle of the arrow, `shift` px to its left (seen from a to b), `along` px further
@@ -130,7 +144,7 @@
     lab.style.left = (mx + uy * shift) + 'px'; lab.style.top = (my - ux * shift) + 'px';
   }
   function layoutOne(sec, a, sr, k) {
-    if (a.classList.contains('edge')) return layoutEdge(sec, a, sr, k);
+    if (a.hasAttribute('data-from')) return layoutEdge(sec, a, sr, k);
     const names = (a.getAttribute('data-to') || '').split(/[\s,]+/).filter(Boolean);
     const ts = names.map(n => target(sec, n)).filter(Boolean).map(e => box(e, sr, k));
     const lab = a.querySelector('.annot-box');
@@ -169,14 +183,14 @@
       let [x2, y2] = side(T, rev ? 1 : gap) || exitPoint(T, cx(L), cy(L), rev ? 1 : gap);
       let [x1, y1] = exitPoint(L, x2, y2, rev ? gap : 1);
       if (rev) [x1, y1, x2, y2] = [x2, y2, x1, y1];
-      const p = arrow(x1, y1, x2, y2, kind === 'thin' ? 2.5 : 9, kind === 'thin' ? 9 : 16, kind === 'thin' ? 5 : 11);
+      const p = arrow(x1, y1, x2, y2, ...shape(a, 'fat'));
       if (p) svg.appendChild(p);
     });
     a.insertBefore(svg, a.firstChild);
   }
   function layout(sec) {
     if (!sec) return;
-    const as = sec.querySelectorAll('.annot, .edge');
+    const as = sec.querySelectorAll('.annot');
     if (!as.length) return;
     const sr = sec.getBoundingClientRect();
     if (!sr.width) return;
@@ -200,19 +214,15 @@
   }
   let t = null;
   window.TalkAnnot = { layout, later: () => { clearTimeout(t); t = setTimeout(all, 30); } };
-  function boot() {
-    if (!window.Reveal) return;
-    const go = () => {
-      all();
-      Reveal.on('slidechanged', e => layout(e.currentSlide));
-      Reveal.on('resize', () => window.TalkAnnot.later());
-      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => window.TalkAnnot.later());
-    };
-    if (Reveal.isReady && Reveal.isReady()) go(); else Reveal.on('ready', go);
-  }
-  if (document.readyState === 'complete') boot(); else window.addEventListener('load', boot);
+  talkWhenReady(() => {
+    all();
+    Reveal.on('slidechanged', e => layout(e.currentSlide));
+    Reveal.on('resize', () => window.TalkAnnot.later());
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => window.TalkAnnot.later());
+  });
 })();
 
+// ---- (3) audio, auto-animate matcher, letter-box bleed, keys ------------------------
 (function () {
   const cfg = Object.assign({ autoplay: false, delay: 0, stopOnSlideChange: true },
     (window.TalkConfig && window.TalkConfig.audio) || {});
@@ -226,8 +236,8 @@
       const loop = el.getAttribute('data-loop');
       if (loop !== null && loop !== 'false') a.loop = true;
       if (el.hasAttribute('data-volume')) a.volume = Math.max(0, Math.min(1, parseFloat(el.getAttribute('data-volume'))));
-      a.addEventListener('ended', () => { el.classList.remove('playing'); releaseLater(); });
-      a.addEventListener('pause', releaseLater);
+      a.addEventListener('ended', () => { el.classList.remove('playing'); idleLater(); });
+      a.addEventListener('pause', idleLater);
       players.set(el, a);
     }
     return a;
@@ -239,13 +249,12 @@
       a.pause(); el.classList.remove('playing');
     });
   }
-  // {.fragment delay=end}: shown at its click but kept invisible (.talk-waiting) while a sound
-  // plays; released when no sound plays any more (end, stop, blocked by the browser)
+  // for the waiting module (6): is a sound playing? and the event "talk:audio-idle" once none plays
+  // any more (end, stop, blocked by the browser)
   const playing = () => Array.from(players.values()).some(a => !a.paused);
-  function releaseLater() {
-    setTimeout(() => {
-      if (!playing()) document.querySelectorAll('.reveal .talk-waiting').forEach(f => f.classList.remove('talk-waiting'));
-    }, 0);
+  window.TalkAudio = { playing };
+  function idleLater() {
+    setTimeout(() => { if (!playing()) document.dispatchEvent(new Event('talk:audio-idle')); }, 0);
   }
   function play(el) {
     const a = audioFor(el);
@@ -257,7 +266,7 @@
     if (p && p.catch) p.catch(err => {          // browser autoplay policy: needs one click/key first
       el.classList.remove('playing');           // (an AbortError = stopped before it started: not blocked)
       if (!err || err.name !== 'AbortError') el.classList.add('blocked');
-      releaseLater();
+      idleLater();
     });
   }
   function toggle(el) {
@@ -302,7 +311,6 @@
     }, true);
     if (!window.Reveal) return;
     Reveal.on('slidechanged', ev => {
-      document.querySelectorAll('.reveal .talk-waiting').forEach(f => f.classList.remove('talk-waiting'));
       if (cfg.stopOnSlideChange) stopAll();
       autoplayIn(ev.currentSlide);
     });
@@ -310,18 +318,18 @@
       (ev.fragments || [ev.fragment]).forEach(f => {
         if (f.hasAttribute('data-stop-audio')) stopAll();
         const ids = f.getAttribute('data-play');
-        if (ids) ids.split(/[\s,]+/).forEach(id => { const el = document.getElementById(id); if (el) play(el); });
+        // (a trigger made by play=N; its sound waits data-autoplay-delay seconds, if given)
+        if (ids) ids.split(/[\s,]+/).forEach(id => {
+          const el = document.getElementById(id); if (!el) return;
+          const d = parseFloat(el.getAttribute('data-autoplay-delay') || 0) * 1000;
+          if (d > 0) { clearTimeout(el._talkTimer); el._talkTimer = setTimeout(() => play(el), d); } else play(el);
+        });
         const els = f.matches('[data-audio]') ? [f] : Array.from(f.querySelectorAll('[data-audio]'));
         els.filter(wantsAutoplay).forEach(schedule);
-      });
-      // after the plays above: wait for the end of the sound, if one plays
-      (ev.fragments || [ev.fragment]).forEach(f => {
-        if (f.getAttribute('data-delay') === 'end' && playing()) f.classList.add('talk-waiting');
       });
     });
     Reveal.on('fragmenthidden', ev => {
       (ev.fragments || [ev.fragment]).forEach(f => {
-        f.classList.remove('talk-waiting');
         const els = f.matches('[data-audio]') ? [f] : Array.from(f.querySelectorAll('[data-audio]'));
         els.forEach(el => { clearTimeout(el._talkTimer); const a = players.get(el); if (a) { a.pause(); el.classList.remove('playing'); } });
       });
@@ -402,13 +410,7 @@
     document.documentElement.style.setProperty('--sec-bleed-y', by.toFixed(1) + 'px');
   }
 
-  function boot() {
-    if (!window.Reveal) return init();
-    if (Reveal.isReady && Reveal.isReady()) init();
-    else Reveal.on('ready', init);
-  }
-  if (document.readyState === 'complete') boot();
-  else window.addEventListener('load', boot);
+  talkWhenReady(init, true);
 })();
 
 // ============================================================================
@@ -441,11 +443,7 @@
     if (!cfg.slideNumber) return;            // slide numbers switched off: keep it that way
     Reveal.configure({ slideNumber: number });
   }
-  function boot() {
-    if (!window.Reveal) return;
-    if (Reveal.isReady && Reveal.isReady()) init(); else Reveal.on('ready', init);
-  }
-  if (document.readyState === 'complete') boot(); else window.addEventListener('load', boot);
+  talkWhenReady(init);
 })();
 
 // ============================================================================
@@ -462,55 +460,59 @@
                             s._talkPush = setTimeout(() => s.classList.remove('talk-pushing'), d + 50); });
     });
   }
-  function boot() {
-    if (!window.Reveal) return;
-    if (Reveal.isReady && Reveal.isReady()) init(); else Reveal.on('ready', init);
-  }
-  if (document.readyState === 'complete') boot(); else window.addEventListener('load', boot);
+  talkWhenReady(init);
 })();
 
 // ============================================================================
-// (6) delayed appearance: {.fragment delay=3.9} (PowerPoint "after previous" + delay) appears
-//     that many seconds after its click; it hides at once when going back (talk.scss).
-//     delay=move: appears when the motion path (.fragment.move) of the same click has ended.
-//     delay=end (after the sound) is handled by the audio module (3).
+// (6) waiting: every appearance that does not happen exactly at its click.
+//     delay=S     (PowerPoint "after previous" + delay): S seconds after its click (CSS transition-delay,
+//                 --talk-delay); only on the way in: reset once shown, so a .fade-in-then-out leaves
+//                 at its click (restored when hidden again)
+//     delay=move  when the motion path (.fragment.move) of the same click has ended
+//     delay=end   when the sound playing at its click ends or is stopped (module 3 starts the sounds
+//                 of a click first: its fragmentshown listener is registered before this one)
+//     A waiting fragment is .visible.talk-waiting (hidden by talk.scss) until its reason is over.
 // ============================================================================
 (function () {
+  const waits = new Map();                  // fragment → reason ('move' | 'end')
+  function hold(f, why) { waits.set(f, why); f.classList.add('talk-waiting'); }
+  function release(pred) {
+    waits.forEach((why, f) => { if (pred(f, why)) { waits.delete(f); f.classList.remove('talk-waiting'); } });
+  }
   function init() {
     document.querySelectorAll('.reveal .slides [data-delay]').forEach(el => {
       const s = parseFloat(el.dataset.delay);
       if (s > 0) el.style.setProperty('--talk-delay', s + 's');
     });
-  }
-  function moves() {
-    if (!window.Reveal) return;
     Reveal.on('fragmentshown', ev => {
       const fs = ev.fragments || [ev.fragment];
-      // the delay holds only the way in: once the fragment has appeared it is reset, so a
-      // .fade-in-then-out leaves at its click without waiting again (restored when hidden)
       fs.forEach(f => {
         const s = parseFloat(f.dataset.delay);
         if (s > 0) { clearTimeout(f._talkDelay); f._talkDelay = setTimeout(() => f.style.setProperty('--talk-delay', '0s'), s * 1000 + 250); }
+        if (f.dataset.delay === 'end' && window.TalkAudio && TalkAudio.playing()) hold(f, 'end');
       });
       const waiting = fs.filter(f => f.dataset.delay === 'move');
       const mv = fs.filter(f => f.classList.contains('move'));
       if (!waiting.length || !mv.length) return;
-      waiting.forEach(f => f.classList.add('talk-waiting'));
-      const release = () => waiting.forEach(f => f.classList.remove('talk-waiting'));
-      let done = 0;
-      mv.forEach(m => m.addEventListener('transitionend', () => { if (++done >= mv.length) release(); }, { once: true }));
+      waiting.forEach(f => hold(f, 'move'));
+      const done = () => release((f, why) => why === 'move' && waiting.includes(f));
+      let n = 0;
+      mv.forEach(m => m.addEventListener('transitionend', () => { if (++n >= mv.length) done(); }, { once: true }));
       const d = Math.max(...mv.map(m => parseFloat(getComputedStyle(m).transitionDuration) * 1000 || 1000));
-      setTimeout(release, d + 100);          // in case no transition fires (printing, reduced motion)
+      setTimeout(done, d + 100);          // in case no transition fires (printing, reduced motion)
     });
     Reveal.on('fragmenthidden', ev => {
-      (ev.fragments || [ev.fragment]).forEach(f => {
+      const fs = ev.fragments || [ev.fragment];
+      release(f => fs.includes(f));
+      fs.forEach(f => {
         const s = parseFloat(f.dataset.delay);
         if (s > 0) { clearTimeout(f._talkDelay); f.style.setProperty('--talk-delay', s + 's'); }
       });
     });
+    Reveal.on('slidechanged', () => release(() => true));
+    document.addEventListener('talk:audio-idle', () => release((f, why) => why === 'end'));
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
-  if (document.readyState === 'complete') moves(); else window.addEventListener('load', moves);
+  talkWhenReady(init);
 })();
 
 // ============================================================================
@@ -558,10 +560,5 @@
     });
     if (changed && window.Reveal && Reveal.sync) Reveal.sync();
   }
-  function boot() {
-    if (!window.Reveal) return;
-    const go = () => { paginate(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(paginate); };
-    if (Reveal.isReady && Reveal.isReady()) go(); else Reveal.on('ready', go);
-  }
-  if (document.readyState === 'complete') boot(); else window.addEventListener('load', boot);
+  talkWhenReady(() => { paginate(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(paginate); });
 })();

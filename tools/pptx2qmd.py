@@ -45,8 +45,7 @@ def Q(t):
 
 EMU_W = 12192000
 F = 1280 / EMU_W          # px per EMU
-FK = float(os.environ.get('FK', '0.93'))   # Libre Franklin is wider than Franklin Gothic Book
-PT = 4 / 3 * FK           # px per pt (font sizes)
+from shared import FK, PT   # px per pt of font sizes (env FK=0.93: Libre Franklin is wider than Franklin Gothic Book)
 
 def parse(path):
     return etree.parse(path).getroot()
@@ -946,8 +945,8 @@ class Emitter:
             styles.append("padding:%s" % " ".join("%gpx" % round(v, 1) for v in ins))
             for k, v in css.items(): styles.append("%s:%s" % (k, v))
             if bp.get("wrap") == "none": styles.append("white-space:nowrap")
-            if bp.get("vert") in ("vert270",): classes.append(".v270")
-            if bp.get("vert") in ("vert", "eaVert"): classes.append(".v90")
+            if bp.get("vert") in ("vert270",): classes.append(".rot-l")          # text turned a quarter turn
+            if bp.get("vert") in ("vert", "eaVert"): classes.append(".rot-r")
             if info["kind"] == "title": classes.append(".ttl")
             if info["bodypr"].get("autofit") == "spAutoFit" and not (fill and fill != "none") and not line and anchor == "t":
                 with_h = False

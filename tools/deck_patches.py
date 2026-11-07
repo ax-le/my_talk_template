@@ -18,10 +18,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from highlights import parse  # noqa: E402
 
 PATCHES = {
-    "s01": {   # test slide: the sound check as an audio shortcode (hand edit of index.qmd, 5 Nov.)
+    "s01": {   # test slide: the sound check icon inline, not positioned (hand edit of index.qmd, 5 Nov.)
         "sub": [
-            (r'\[\]\{[^}\n]*#aud-0770e834[^}\n]*\}', '{{< audio media/media1.mp3 id=snd >}}'),
-            (r'data-play="aud-0770e834"', 'data-play="snd"'),
+            (r'\[\]\{[^}\n]*#aud-0770e834[^}\n]*\}', '[]{#aud-0770e834 .audio-btn data-audio="media/media1.mp3"}'),
         ],
     },
     "s08": {   # Practical example: the section labels take the palette colours of the overlay
@@ -47,27 +46,27 @@ PATCHES = {
             "a6e78c2b": ' #ann-wh hl="6- purple" hl-shape=round hl-radius=34 hl-pad=20',
         },
         "append": r"""
-::: {.annot to=iff pos=below dist=2 steps=1 arrow=none box=false color=black}
+::: {.annot .fragment .fade-in-then-out to=iff pos=below dist=2 arrow=none box=false color=black fragment-index=1}
 “Matricisation”
 :::
 
-::: {.annot to=kron pos=above dist=36 steps=1 arrow=thin box=false color=black size=19.8}
+::: {.annot .fragment .fade-in-then-out to=kron pos=above dist=36 arrow=thin box=false color=black size=19.8 fragment-index=1}
 Kronecker product
 :::
 
-::: {.annot to=x2 pos=below dist=58 steps=2- sub="(“unfolding” of the tensor)"}
+::: {.annot .fragment to=x2 pos=below dist=58 sub="(“unfolding” of the tensor)" fragment-index=2}
 Barwise TF matrix
 :::
 
-::: {.annot to=approx pos=above dist=58 steps=3-}
+::: {.annot .fragment to=approx pos=above dist=58 fragment-index=3}
 Latent<br>representation
 :::
 
-::: {.annot to="q gwh" pos=below dist=70 shift=75 steps=4-}
+::: {.annot .fragment to="q gwh" pos=below dist=70 shift=75 fragment-index=4}
 2 matrix products
 :::
 
-::: {.annot to="ann-g2 ann-wh" x=553 y=639 steps=6-}
+::: {.annot .fragment to="ann-g2 ann-wh" x=553 y=639 fragment-index=6}
 2 fully-connected<br>layers
 :::
 """,

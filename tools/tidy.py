@@ -23,35 +23,16 @@ import re
 import sys
 from collections import Counter
 
-PT = 4 / 3 * 0.93                       # px per pt, = --talk-pt in talk.scss (FK of pptx2qmd)
-NAMES = {"#1A2E40": "text", "#69A1AB": "accent", "#EBE7DD": "background",
-         "#000000": "black", "#FFFFFF": "white"}
+sys.path.insert(0, __import__("os").path.dirname(__file__))
+from shared import parse, fmt, PT, theme_names          # noqa: E402
+
+NAMES = dict(theme_names(), **{"#000000": "black", "#FFFFFF": "white"})
 TB_PAD = "4.8px 9.6px 4.8px 9.6px"
 DEFAULTS = {                            # role → (font-size px, colour, line-height): CSS defaults
     "ttl": ("54.6px", "#1A2E40", "1.07"),
     "body": ("24.8px", "#1A2E40", "1.13"),
     "tb": ("22.3px", "#000000", None),
 }
-TOKEN = re.compile(r'(#[^\s{}]+)|(\.[^\s{}=]+)|([\w:-]+)=("[^"]*"|[^\s{}]+)')
-
-
-def parse(attr):
-    ident, classes, kv = None, [], []
-    for m in TOKEN.finditer(attr):
-        if m.group(1): ident = m.group(1)
-        elif m.group(2): classes.append(m.group(2))
-        else:
-            v = m.group(4)
-            if v.startswith('"'): v = v[1:-1]
-            kv.append([m.group(3), v])
-    return ident, classes, kv
-
-
-def fmt(ident, classes, kv):
-    out = ([ident] if ident else []) + classes
-    for k, v in kv:
-        out.append('%s=%s' % (k, v) if re.fullmatch(r'[\w.%-]+', v) else '%s="%s"' % (k, v))
-    return " ".join(out)
 
 
 def colour(v):

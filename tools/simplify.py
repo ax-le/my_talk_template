@@ -5,21 +5,18 @@ import re, sys, math
 from collections import Counter
 
 REPORT = Counter()
-THEME = {'#69A1AB': 'accent', '#1A2E40': 'text', '#EBE7DD': 'background'}
+sys.path.insert(0, __import__('os').path.dirname(__file__))
+from shared import parse, theme_names, deck_palette          # noqa: E402
+
+THEME = theme_names()
 
 # ---------------------------------------------------------------- attribute blocks
-ATTR_RE = re.compile(r'(\.[\w-]+)|(#[\w-]+)|([\w-]+)=("[^"]*"|\S+?)(?=\s|$)')
-
 def parse_attrs(s):
-    """'{.a .b k=v k2="x y"}' -> (classes list, id, ordered dict)"""
+    """'{.a .b k=v k2="x y"}' -> (classes list, id, ordered dict of the values as written)"""
     s = s.strip()
     if s.startswith('{'): s = s[1:-1]
-    cls, ident, kv = [], None, {}
-    for m in ATTR_RE.finditer(s):
-        if m.group(1): cls.append(m.group(1)[1:])
-        elif m.group(2): ident = m.group(2)[1:]
-        else: kv[m.group(3)] = m.group(4)
-    return cls, ident, kv
+    ident, cls, kv = parse(s, raw=True)
+    return [c[1:] for c in cls], ident[1:] if ident else None, dict(kv)
 
 def fmt_attrs(cls, ident, kv):
     parts = (['#' + ident] if ident else []) + ['.' + c for c in cls] + [f'{k}={v}' for k, v in kv.items()]
@@ -333,7 +330,7 @@ def convert_div(attr_s, body):
             return None
         skv, swap = res
         if swap and any(l.strip() for k, l in enumerate(body) if k != geo_i):
-            cls.append('v90' if round(float(rot)) % 360 == 90 else 'v270')   # its text turns with it
+            cls.append('rot-r' if round(float(rot)) % 360 == 90 else 'rot-l')   # its text turns with it
         if swap:   # quarter turn absorbed in the shape: the visible box is the rotated one
             L, T = num(kv['left']), num(kv['top'])
             kv['left'], kv['top'] = '%g' % round(L + (W - H) / 2), '%g' % round(T + (H - W) / 2)
@@ -507,15 +504,16 @@ def main(src, dst):
     # an empty framed box on the slide background → .box
     r = re.sub(r'^\[\]\{\.absolute ([^}]*?)background=background border="1px solid black"([^}]*)\}$',
                lambda m: '[]{.absolute .box ' + m.group(1).rstrip() + m.group(2) + '}', r, flags=re.M)
-    # an icon shown from the start + its trigger at click N → play=N on the icon
-    for m in re.finditer(r'^\[\]\{\.fragment data-play="(aud-[0-9a-f]+)" fragment-index=(\d+)\}\n', r, re.M):
+    # an icon shown from the start + its trigger at click N → play=N on the icon (its id dropped)
+    for m in re.finditer(r'^\[\]\{\.fragment data-play="([\w-]+)" fragment-index=(\d+)\}\n', r, re.M):
         aid, n = m.group(1), m.group(2)
         if r.count(aid) == 2:
             r = r.replace(m.group(0), '', 1)
-            r = re.sub(r'\[\]\{#' + aid + r' (\.absolute \.audio-btn [^}]*)\}', lambda mm: '[]{' + mm.group(1) + ' play=' + n + '}', r)
+            r = re.sub(r'\[\]\{#' + re.escape(aid) + r' ((?:\.absolute )?\.audio-btn [^}]*)\}', lambda mm: '[]{' + mm.group(1) + ' play=' + n + '}', r)
     # PowerPoint's default shape style in another colour → .filled background=…
     r = re.sub(r'\{\.absolute \.tb \.va-ctr ([^}]*?)background=("[^"]+"|\S+) border="3\.67px solid #345056" align=center([^}]*)\}',
                lambda m: '{.absolute .filled ' + m.group(1) + 'background=' + m.group(2) + m.group(3) + '}', r)
+    r = final_syntax(r)
     r = re.sub(r'\n{3,}', '\n\n', r)
     # a fenced div opener right after a paragraph line would be read as part of that paragraph
     L = r.split('\n')
@@ -535,16 +533,42 @@ def main(src, dst):
     print(dict(REPORT)); print('flipped:', FLIPPED)
 
 
+# ---------------------------------------------------------------- the template's author syntax
+# The earlier passes work with the converter's own classes; the written deck uses the template's
+# attributes: .va-ctr / .va-b → valign=center / bottom; a sound []{.audio-btn data-audio="x"
+# [data-autoplay=true]} → []{audio=x play=…}; a stop trigger → []{stop=N}.
+ATTR_BLOCK = re.compile(r'\{([^{}\n]*)\}')
+
+def _final_block(m):
+    ident, cls, kv = parse(m.group(1), raw=True)
+    if re.sub(r'(#[^\s{}]+)|(\.[^\s{}=]+)|([\w:-]+)=("[^"]*"|[^\s{}]+)', '', m.group(1)).strip():
+        return m.group(0)                                   # not an attribute block (LaTeX…)
+    d = dict(kv); changed = False
+    def setkv(k, v):
+        kv[:] = [x for x in kv if x[0] != k] + [[k, v]]
+    for c, v in (('.va-ctr', 'center'), ('.va-b', 'bottom')):
+        if c in cls: cls.remove(c); setkv('valign', v); changed = True
+    if 'data-stop-audio' in d and '.fragment' in cls and 'fragment-index' in d:
+        return '{stop=%s}' % d['fragment-index']
+    if 'data-audio' in d:
+        cls = [c for c in cls if c != '.audio-btn']
+        play = d.get('play')
+        rest = [x for x in kv if x[0] not in ('data-audio', 'data-autoplay', 'play')]
+        if d.get('data-autoplay') == 'true':
+            if '.fragment' in cls and 'fragment-index' in d:
+                play = d['fragment-index']; rest = [x for x in rest if x[0] != 'fragment-index']
+            else: play = '0'
+        kv[:] = [['audio', d['data-audio']]] + rest + ([['play', play]] if play else [])
+        changed = True
+    if not changed: return m.group(0)
+    return '{' + ' '.join(([ident] if ident else []) + cls + ['%s=%s' % (k, v) for k, v in kv]) + '}'
+
+def final_syntax(r):
+    return '\n'.join(ATTR_BLOCK.sub(_final_block, l) if '{' in l else l for l in r.split('\n'))
+
+
 # ---------------------------------------------------------------- diagonal overlays → grid box with hl=@diag
-def _palette():
-    import os
-    hdr = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_header.yml')
-    pal = {}
-    if os.path.exists(hdr):
-        for name, hx in re.findall(r'^\s+([\w-]+):\s*"#([0-9A-Fa-f]{6})"', open(hdr).read().split('highlight:')[-1], re.M):
-            pal[tuple(int(hx[k:k + 2], 16) for k in (0, 2, 4))] = name
-    return pal
-PALETTE = _palette()
+PALETTE = {tuple(int(h[k:k + 2], 16) for k in (1, 3, 5)): name for name, h in reversed(deck_palette())}   # (r, g, b) → name
 
 def diagonals(text):
     def repl(m):
