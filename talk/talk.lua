@@ -1354,6 +1354,8 @@ local function box_attrs(el)
     el.classes:insert("audio-cols")
   end
   if a["opacity"] then st[#st + 1] = "opacity:" .. a["opacity"]; a["opacity"] = nil end
+  -- fade-delay=S on a .fade-after: it fades out S s after the slide arrives (default: the push duration)
+  if a["fade-delay"] then st[#st + 1] = "--talk-fade-delay:" .. a["fade-delay"] .. "s"; a["fade-delay"] = nil end
   -- indent="80 120": left edge of the text of level-1 items / of deeper levels, in px (hanging markers)
   if a["indent"] then
     local v = {}

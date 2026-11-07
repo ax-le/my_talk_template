@@ -38,8 +38,8 @@ talk:
     highlight-author: Marmoret    # own name in bold in the lists, own labels in bold everywhere
   highlight:
     opacity: 0.5
-    colors:                       # extra palette names, usable in hl="… intro" and \hl{…}{intro}{…},
-      intro: "#F2C418"            # color=, background=, border=, cells=, stack=… (a value may be a name)
+    colors:                       # extra palette names, usable in hl="… custom" and \hl{…}{custom}{…},
+      custom: "#F2C418"           # color=, background=, border=, cells=, stack=… (a value may be a name)
       shade1: "#F2F2F2"
       shade2: "#E1ECEE"
       shade3: "#C3D9DD"
@@ -50,20 +50,17 @@ talk:
 
 ## Test {.test-slide}
 
-<!-- EXPECT: the clicker / sound check slide shown before the talk. Not counted: the counter
-     reads "test slide", and the next slide is 1. Click 1-3 show First, Second, Third
-     (marker included); the speaker icon plays a sound in the end. -->
+<!-- EXPECT: the clicker / sound check slide shown before the talk. Not counted: the counter reads
+     "test slide", and the next slide is 1. (Its content is free: three clicks and a sound to try
+     the clicker and the speakers; clicks and sounds are checked on their own slides.) -->
 
-{{< audio media/media5.mp3 label="Sound check (played on 3rd slide)" id=snd >}}
+{{< audio media/media5.mp3 label="Sound check" >}}
 
-::: {.absolute .tb .body left=144 top=240 width=1008 height=376}
+::: {.absolute .tb .body .incremental left=144 top=240 width=1008 height=376}
 - First
-- [Second]{.fragment .fade-in-then-out fragment-index=1}
-- [Third]{.fragment fragment-index=2}
+- Second
+- Third
 :::
-
-[]{.fragment data-play="snd" fragment-index=3}
-
 
 ## {.title-slide}
 
@@ -75,14 +72,15 @@ talk:
 
 ## Feature tour
 
-<!-- EXPECT: Markdown content starts under the title; inline and display maths (KaTeX, offline). Slide number 2. -->
+<!-- EXPECT: Markdown content starts under the title; inline and display maths (KaTeX, offline);
+     speaker notes (press S). Slide number 2. -->
 
-- Plain Markdown slides work as usual: bullets, **bold**, *italic*, `code`.
+- Plain Markdown slides work as usual: bullets, **bold**, *italic*, [underlined]{.underline}, `code`.
 - Inline maths $X \approx WH$ and display maths:
 
 $$\mathcal{X} \approx \mathcal{G} \times_1 W \times_2 H \times_3 Q$$
 
-- Keys during the talk: **A** stops every sound, **R** shows the highlight areas.
+- Keys during the talk: **A** stops every sound, **R** shows the highlight areas, **S** the notes.
 
 ::: notes
 Speaker notes (press S).
@@ -91,18 +89,20 @@ Speaker notes (press S).
 ## Outline {.toc-slide}
 
 <!-- EXPECT: basic table of contents, filled automatically: one numbered entry per section
-     (every .section-header of the deck), its title (a link to the section) and, smaller, its
-     summary (the panel text of the summary slide, else the header subtitle). Basic look:
-     restyle it with .talk-toc / .toc-item / .toc-title / .toc-summary. -->
+     (every .section-header of the deck except the one marked .no-toc: "First section" and
+     "A long section title (Short name)", not "Simple section style"), its title (a link to
+     the section) and, smaller, its summary (the panel text of the summary slide, else the header
+     subtitle). Basic look: restyle it with .talk-toc / .toc-item / .toc-title / .toc-summary. -->
 
 ## Writing a slide: defaults first
 
 <!-- EXPECT: plain Markdown gives the usual layout with no attribute at all: title at its place,
      text and lists in the content area (20 pt, master bullets), which runs to 60 px from the
-     right edge, i.e. to the right border of the upper-right box (the first item wraps just
-     before "template": 3 px too long). The two positioned boxes use
-     short attributes only: upper right, 16 pt, accent colour; a framed PowerPoint-like text
-     box (.tb: 18 pt, inner margin) centred, with an accent border. No style= anywhere. -->
+     right edge, i.e. to the right border of the upper-right box (the first item wraps after
+     "template I"). The positioned boxes use short attributes only: upper right, 16 pt,
+     accent colour; a framed PowerPoint-like text box (.tb: 18 pt, inner margin) with an accent
+     border, text centred; at the bottom left a rounded accent box at 50 % opacity with an inner
+     padding. No style= anywhere. -->
 
 - Write Markdown: the default place, size and bullets come from the original PPT template I was using.
   - sub-items too
@@ -116,33 +116,65 @@ Speaker notes (press S).
 `.tb` text box, `border="2px solid accent" align=center`
 :::
 
+[`background=accent opacity=0.5 radius=12 padding="10px 20px"`]{.absolute left=144 top=580 size=14 background=accent opacity=0.5 radius=12 padding="10px 20px"}
+
 ::: {.absolute left=760 top=470 width=400 size=14}
 Attributes: `left top right bottom width height` (px), `size` (pt), `color background`
 (CSS or theme names `text title accent background bar`), `align`, `border`, `radius`,
-`line-height`, `padding`.
+`line-height`, `padding`, `opacity`. Text boxes: `.tb` (18 pt), `.tb.body` (20 pt), `.tb.ttl`
+(44 pt, title colour).
 :::
+
+## Title placed by hand {top=40 left=400 size=32}
+
+<!-- EXPECT: the title is higher (top=40), further right (left=400) and smaller (32 px) than on
+     the other slides; the content below is not moved. -->
+
+- `## Title {top=40 left=400 size=32}` (also `width=`): the PowerPoint title box, placed by hand.
+
+## Push transition {push=up}
+
+<!-- EXPECT: entering this slide, PowerPoint "Push": the previous slide and this one move up
+     TOGETHER (no empty gap, no lag), in 0.8 s; going back, they move down together. -->
+
+- `## Title {push=up}`: `up`, `down`, `left`, `right`; duration: YAML `talk: push-duration` (0.8 s)
+- Other native reveal transitions (`transition=`) still work.
+
+## Background colour {background-color="#F4F1EA"}
+
+<!-- EXPECT: this slide has a lighter background (native Quarto attribute background-color="…"
+     on the heading); the whole deck's colour is YAML talk: colors: background. -->
+
+- Deck: `talk: colors: background: "#EBE7DD"` (YAML)
+- One slide: `## Title {background-color="#F4F1EA"}` (native Quarto; also `background-image=`)
+
+## No left bar {.nobar}
+
+<!-- EXPECT: no vertical bar on the left of this slide (.nobar); everything else as usual. -->
+
+- `## Title {.nobar}`: the vertical bar on the left is hidden on this slide.
 
 ## Grid boxes: one box, several cells
 
-<!-- EXPECT: every bar and the matrix are ONE box each, cut into cells by thin lines (no
-     double lines). Bar 2 (cols="2 2 2 2 2 2 1 1 2 2 2") has two narrow cells "d" "e" and
-     appears as a whole at click 1. Click 2: cell 4 of bar 3 ("C") and the middle cell of the
-     matrix turn red / accent (hl=), the lines staying on top. Click 3: the text "B'" appears in
-     its cell; the bottom row of the matrix turns teal. -->
+<!-- EXPECT: every bar and the matrix are ONE box each, cut into cells by thin lines (no double
+     lines). Bar 2 (cols="2 2 2 2 2 2 1 1 2 2 2") has two narrow cells "d" "e". The matrix cells are
+     coloured from light to dark (cells=). Click 1: the last cell of bar 3 appears as a whole,
+     text "B'" and accent background together ([B']{.cell .fragment background=accent}), the lines
+     staying in place. -->
 
 ::: {.absolute left=144 top=200 width=200 size=16 align=right}
-Song organisation
+Row labels
 :::
 
 ::: {.absolute left=360 top=195 width=790 height=45 border="1px solid text" cols=5 lines=true}
-- Verse
-- Chorus
-- Verse
-- Solo
-- Chorus
+- One
+- Two
+- Three
+- Four
+- Five
 :::
 
-::: {.absolute .fragment left=360 top=270 width=790 height=45 border="1px solid text" cols="2 2 2 2 2 2 1 1 2 2 2" lines=true data-fragment-index=1}
+::: {.absolute left=360 top=270 width=790 height=45 border="1px solid text" cols="2 2 2 2 2 2 1 1 2 2 2" lines=true}
 - a
 - b
 - c
@@ -156,24 +188,23 @@ Song organisation
 - c'
 :::
 
-::: {.absolute left=360 top=345 width=790 height=45 border="1px solid text" cols=5 lines=true hl="2-@4 accent"}
+::: {.absolute left=360 top=345 width=790 height=45 border="1px solid text" cols=5 lines=true}
 - A
 - B
 - A
 - C
-- [B']{.fragment data-fragment-index=3}
+- [B']{.cell .fragment background=accent}
 :::
 
-::: {.absolute .matrix left=150 top=420 width=150 height=120 cols=3 rows=3 lines=true hl="2-@2,2; 3-@*,3 teal"}
-$M$
+::: {.absolute .matrix left=150 top=420 width=150 height=120 cols=3 rows=3 lines=true cells="shade1 shade2 shade3 shade2 shade3 shade4 shade3 shade4 shade5"}
 :::
 
 ::: {.absolute left=340 top=420 width=820 size=14}
 `cols=` / `rows=`: a number of equal cells, or relative sizes (`cols="2 2 1 1"`) · `lines=true`
-(or `"2px accent"`): lines between cells · a list = the text of the cells, row by row · `hl=`:
-coloured cells at clicks, addressed `k`, `k-l`, `c,r`, `*` (same as on any object) ·
-`[x]{.cell …}` alone in an item: attributes of the whole cell (`.fragment`, `background=`,
-`data-id=` to morph) · PowerPoint rows of touching boxes become such a box (`tools/segments.py`).
+(or `"2px accent"`): lines between cells · a list = the text of the cells, row by row ·
+`cells="c1 c2 …"`: cell colours, row by row · `[x]{.cell …}` alone in an item: attributes of the
+whole cell (`.fragment`, `background=`, `hl=`, `data-id=` to morph) · `hl=`: see the highlight
+slides · PowerPoint rows of touching boxes become such a box (`tools/segments.py`).
 :::
 
 ## Lists: markers and levels
@@ -181,8 +212,7 @@ coloured cells at clicks, addressed `k`, `k-l`, `c,r`, `*` (same as on any objec
 <!-- EXPECT: Markdown lists: four different markers for four levels (■, – italic, • smaller,
      ○ italic; a 5th level would get ►, deeper levels start again at ■), hanging indents of the
      PowerPoint master (0.42", 1", 1.5", 2"), 10 pt before a level-1 item, 5 pt before the
-     others. All items shown at once. The numbered list shows 1. 2. The two columns are
-     60 px apart (gap=60 on .columns). -->
+     others. All items shown at once. The numbered list shows 1. 2. -->
 
 :::: {.columns gap=60}
 ::: {.column width="55%"}
@@ -221,9 +251,35 @@ coloured cells at clicks, addressed `k`, `k-l`, `c,r`, `*` (same as on any objec
 :::
 
 ::: {.absolute left=144 top=470 width=1000 size=14.5}
-Presets: `.b-sq .b-dash .b-dot .b-circ .b-tri .b-check .b-arrow .b-none` (all levels) or with the level
+Presets: `.b-sq .b-dash .b-dot .b-circ .b-tri .b-check .b-cross .b-arrow .b-none` (all levels) or with the level
 `.b-dot0` … `.b-dot4`; per level `bullets="■ – • ○ ►"` (`none` = no marker); whole deck: YAML `talk: bullets:`;
 fine control: CSS variables `--talk-bN`, `--talk-marN`, `--talk-indN`, `--talk-spcbN` (README).
+:::
+
+## Lists: check and picture markers {.no-slide-refs}
+
+<!-- EXPECT: left: a list whose items have a green check (.yes) or a red cross (.no) as their
+     marker. Right: two items whose markers are
+     pictures (a question mark, an exclamation mark), 73 px wide (mark=, mark-size=73), hanging in
+     the indent like a text marker, centred on the first line, the lines not pushed apart; the text
+     of level 1 starts 86 px from the box's left edge and the level-2 item 50 px further, with its
+     usual "–" marker (indent="86 50"); 40 pt before each level-1 item (spacing="40 5"). -->
+
+::: {.absolute .tb .body left=144 top=200 width=420}
+- [A good point]{.yes}
+- [A bad point]{.no}
+- [Another bad point]{.no}
+:::
+
+::: {.absolute .tb .body left=640 top=180 width=520 indent="86 50" spacing="40 5"}
+- [First item]{mark=media/question.svg mark-size=73}
+- [Second item]{mark=media/exclamation.svg mark-size=73}
+  - *A sub-item* $(\beta = 1)$
+:::
+
+::: {.absolute left=144 top=500 width=1000 size=14}
+`- [text]{.yes}` / `{.no}` (whole lists: `.b-check` / `.b-cross`) · `- [text]{mark=icon.svg mark-size=73}`: a picture
+as the marker · `indent="86 50"` on the box: text of level 1 at 86 px, each deeper level 50 px further
 :::
 
 ## Lists: spacing {.no-slide-refs}
@@ -270,47 +326,12 @@ fine control: CSS variables `--talk-bN`, `--talk-marN`, `--talk-indN`, `--talk-s
 CSS variables `--talk-spcbN` (before), `--talk-spca` (after), `--talk-list-lh`.
 :::
 
-## Columns
-
-<!-- EXPECT: three columns of equal width, 40 px apart (default gap); below, two columns 30 % /
-     70 % with gap=80, both 200 px tall: the left one's two blocks spread evenly over that height
-     (.va-spread), the right one's text sits at the bottom (.va-b). Native Quarto syntax, plus
-     gap= on .columns and height= / .va-ctr .va-b .va-spread on a column. -->
-
-:::: {.columns}
-::: {.column}
-- One
-- Three equal columns
-:::
-::: {.column}
-- Two
-- no width given
-:::
-::: {.column}
-- Three
-- 40 px apart
-:::
-::::
-
-&nbsp;
-
-:::: {.columns gap=80}
-::: {.column .va-spread width="30%" height=200}
-`width="30%"`, `gap=80`
-
-`.va-spread height=200`
-:::
-::: {.column .va-b width="70%" height=200}
-`:::: {.columns gap=80}` then one `::: {.column width=…}` per column (any content: lists, pictures, boxes, maths); `.va-b` puts this text at the bottom.
-:::
-::::
-
 ## Lists: clicks {.no-slide-refs}
 
 <!-- EXPECT: left (native .incremental): every item, sub-items included, is its own click
      (clicks 1-4), its marker appearing with it. Right (.incremental levels=1, PowerPoint
      "by 1st level paragraphs"): each level-1 item appears with its sub-items (clicks 5-6).
-     Items without incremental are shown at once (first slide of this tour). -->
+     Items without incremental are shown at once (previous slides). -->
 
 ::: {.absolute .incremental left=144 top=200 width=480}
 - One
@@ -327,16 +348,86 @@ CSS variables `--talk-spcbN` (before), `--talk-spca` (after), `--talk-list-lh`.
   - four.a
 :::
 
-## Background colour {background-color="#F4F1EA" push=up}
+## Columns
 
-<!-- EXPECT: this slide has a lighter background (native Quarto attribute
-     background-color="…" on the heading); the whole deck's colour is YAML talk: colors:
-     background. Everything else unchanged. Entering it, PowerPoint "Push": the previous
-     slide and this one move up TOGETHER (no empty gap, no lag), in 0.8 s; going back, they
-     move down together. push=up|down|left|right (YAML talk: push-duration). -->
+<!-- EXPECT: three columns of equal width, 40 px apart (default gap), a thin line in the middle of
+     each gap (lines=true); below, two columns 30 % / 70 % with gap=80, both 200 px tall: the left
+     one's two blocks spread evenly over that height (.va-spread), the right one's text sits at the
+     bottom (.va-b). Native Quarto syntax, plus gap= / lines= on .columns and height= / .va-ctr
+     .va-b .va-spread on a column. -->
 
-- Deck: `talk: colors: background: "#EBE7DD"` (YAML)
-- One slide: `## Title {background-color="#F4F1EA"}` (native Quarto; also `background-image=`)
+:::: {.columns lines=true}
+::: {.column}
+- One
+- Three equal columns
+:::
+::: {.column}
+- Two
+- no width given
+:::
+::: {.column}
+- Three
+- `lines=true`
+:::
+::::
+
+&nbsp;
+
+:::: {.columns gap=80}
+::: {.column .va-spread width="30%" height=200}
+`width="30%"`, `gap=80`
+
+`.va-spread height=200`
+:::
+::: {.column .va-b width="70%" height=200}
+`:::: {.columns gap=80}` then one `::: {.column width=…}` per column (any content: lists, pictures, boxes, maths); `.va-b` puts this text at the bottom.
+:::
+::::
+
+## Cards
+
+<!-- EXPECT: three cards (title bar in the shape style, framed body with "•" items, text centred
+     vertically), the same height; the third one appears at click 1 and has a footer in the light
+     accent colour. -->
+
+::: {.absolute .columns left=144 top=170 width=1000 gap=40}
+::: {.column .card height=280}
+### Card one
+- A list
+- in the body
+:::
+::: {.column .card height=280 align=center}
+### Card two
+Plain text, centred
+:::
+::: {.column .card .fragment height=280 fragment-index=1}
+### Card three (click 1)
+- With a footer
+
+::: {.card-foot}
+*Footer*
+:::
+:::
+:::
+
+::: {.absolute left=144 top=520 width=1000 size=14}
+`::: {.card}` `### Title` body `::: {.card-foot} … :::` `:::` · `::: {.column .card}` in a row of columns
+(the cards share the row's height) · alone: `.absolute left= top= width= height=`
+:::
+
+## Separators
+
+<!-- EXPECT: a 1 px black horizontal line, a thick vertical accent line and a dashed cyan
+     vertical line (one .sep each, no arrow shortcode, no style=). -->
+
+[]{.sep .absolute left=144 top=220 width=1000}
+[]{.sep .absolute left=300 top=260 height=240 thickness=6 color=accent}
+[]{.sep .absolute left=600 top=260 height=240 thickness=4 color=cyan dash="12 8"}
+
+::: {.absolute left=144 top=540 width=1000 size=14}
+`[]{.sep .absolute left= top= width=600}` (horizontal) or `height=300` (vertical) · `thickness=` (1 px) ·
+`color=` (black) · `dash="12 8"` (dashed) · clicks and classes as usual
+:::
 
 ## Captioned pictures
 
@@ -346,16 +437,125 @@ CSS variables `--talk-spcbN` (before), `--talk-spca` (after), `--talk-list-lh`.
      figure: the box gives the place, the caption hangs outside the picture. -->
 
 ::: {.absolute .caption-top left=200 top=260 size=18}
-![Self-similarity matrix](media/img/generic_images/pneuma_q_matrix.png){width=300 height=300}
+![Picture one](media/img/generic_images/pneuma_q_matrix.png){width=300 height=300}
 :::
 
 ::: {.absolute .caption-bottom left=620 top=260 size=18 color=accent}
 ![My egoncentric face](media/img/generic_images/my_face.jpeg){width=200 height=230}
 :::
 
-## PhD,<br>in a nutshell {.side-panel}
+## Boxes and shapes
 
-<!-- EXPECT: static left panel in the accent colour, closed by a black line; no transition. -->
+<!-- EXPECT: top row: a framed .box "Q", a .filled box "Filled" (accent fill, dark outline, light
+     text), a .filled arrow-right "Arrow", a down arrow. Bottom row: a parallelogram, a cube with "𝒳"
+     in its front face, and a long thin arrow with a short head (head=15 shaft=30, in % of the
+     box). -->
+
+[$Q$]{.absolute .box left=150 top=200 width=90 height=70}
+[Filled]{.absolute .filled left=290 top=200 width=140 height=70}
+[Arrow]{.absolute .filled left=480 top=200 width=150 height=70 shape=arrow-right}
+[]{.absolute .filled left=680 top=190 width=50 height=90 shape=arrow-down}
+[$Q$]{.absolute .box left=150 top=360 width=120 height=70 shape=parallelogram}
+[$\mathscr{X}$]{.absolute .box left=320 top=330 width=160 height=130 shape=cube depth=30}
+[]{.absolute .filled left=540 top=375 width=300 height=40 shape=arrow-right head=15 shaft=30}
+
+::: {.absolute left=150 top=520 width=1000 size=14}
+`.box` (framed) · `.filled` (accent shape style) · `shape=arrow-right|arrow-left|arrow-up|arrow-down|shrink|grow|parallelogram|cube`
+· `head= shaft=` (%) · `taper=` (%) · `slant=` (%) · `depth=` (px) · `background=` fill, `border=` outline
+:::
+
+## Block diagrams
+
+<!-- EXPECT: a horizontal .flow X → Encoder (trapezoid narrowing) → Q → Decoder (widening) → X̂,
+     boxes centred vertically, "ft" dimension arrows left of X and right of X̂ (dim-left /
+     dim-right), the labels of the narrow boxes turned a quarter turn: X and Q read bottom-up
+     (.rot-l), X̂ top-down (.rot-r); a KaTeX arrow labelled a(). -->
+
+::: {.absolute .flow left=180 top=220 width=900 height=280 size=18 gap=20}
+[$X_i^T$]{.box .rot-l width=42 height=100% dim-left="ft"}
+[Encoder]{shape=shrink width=150 height=90% taper=30%}
+[$Q_i^T$]{.box .rot-l width=42 height=70}
+$\xrightarrow{\;a()\;}$
+[Decoder]{shape=grow width=150 height=90% taper=30%}
+[$\hat{X}_i^T$]{.box .rot-r width=42 height=100% dim-right="ft"}
+:::
+
+::: {.absolute left=180 top=560 width=900 size=14}
+`::: {.absolute .flow left= top= width= height= gap=}` + one box per item (spans), laid out in a row
+· `.rot-l` / `.rot-r`: content turned a quarter turn
+:::
+
+## Matrices and tensors {auto-animate=true}
+
+<!-- EXPECT: a matrix "X" (6 rows, lines) with its dimension arrows b (left, up) and tf (bottom,
+     right) and their labels in maths, 14 pt (dim-size=14; 18 pt elsewhere); a cube "𝒳" with f (left
+     of the front face), t (under it) and b along the top-left edge; a parallelogram "Q" with b along
+     its slanted side and r_b under it; a 6-cell bar whose cells are coloured (cells=) with its f / t
+     arrows. On the next slide (morph) the cells of the bar fly into the slices of a stack (cell-id /
+     stack-id "bar") and the f / t arrows glide with them (dim-id "bar"). -->
+
+[$$X$$]{.absolute .matrix left=144 top=200 width=300 height=110 rows=6 lines=true dim-left=b dim-bottom=tf dim-size=14}
+
+::: {.absolute .tb .va-ctr left=560 top=180 width=200 height=160 align=center shape=cube depth=50 dim-left=f dim-bottom=t dim-depth=b}
+$\mathscr{X}$
+:::
+
+[$$Q$$]{.absolute .tb .va-ctr left=900 top=190 width=90 height=80 align=center shape=parallelogram slant=45 dim-depth=b dim-bottom="r_b"}
+
+::: {.absolute left=144 top=420 width=360 height=110 border="1px solid black" cols=6 lines=true cells="shade1 shade2 shade3 shade4 shade5 shade6" cell-id=bar}
+:::
+[]{.absolute left=144 top=420 width=60 height=110 dim-left=f dim-bottom=t dim-id=bar}
+
+::: {.absolute left=560 top=400 width=600 size=14}
+`[$X$]{.absolute .matrix … rows=6 lines=true dim-left=b dim-bottom=tf}` · on a cube / stack also
+`dim-depth=`, on a parallelogram the depth arrow follows the slanted side · `dim-top=`, `dim-right=`
+· labels are maths (`r_b` → $r_b$; `$…$` or text otherwise), `dim-size=` pt · `cell-id=P` gives the
+cells of a grid box `data-id` P-1, P-2… · `dim-id=P` names the arrows P-left, P-bottom…
+:::
+
+## Matrices and tensors {auto-animate=true}
+
+[]{.absolute .matrix left=400 top=300 width=60 height=110 stack="shade1 shade2 shade3 shade4 shade5 shade6" stack-id=bar depth=80 lift=70 dim-left=f dim-bottom=t dim-depth=b dim-id=bar}
+
+::: {.absolute left=560 top=300 width=600 size=14}
+`[]{.absolute .matrix … stack="c1 … cn" stack-id=P depth=80 lift=70 dim-left=f dim-bottom=t dim-depth=b dim-id=P}`:
+a stack of n slices (the first one in front, the others `depth` px to the right and `lift` px up).
+:::
+
+## Arrows
+
+<!-- EXPECT: a thin black arrow, a thick accent line without head, a bent arrow (one waypoint,
+     sharp corner: smooth=false) and a connector with a dot at its start (head=circle head-start)
+     are always visible; at click 1 an accent arrow is drawn (fragment=true). -->
+
+{{< arrow from="150,230" to="450,230" width=1 size=6 position="absolute" >}}
+{{< arrow from="150,300" to="450,300" color="var(--talk-accent)" width=4 head=none position="absolute" >}}
+{{< arrow from="550,230" to="850,360" waypoints="850,230" smooth=false width=3 size=4 position="absolute" >}}
+{{< arrow from="150,380" to="450,380" color="var(--hl-shade5)" width=5 head=circle head-start=true head-end=false size=4 position="absolute" >}}
+{{< arrow from="150,480" to="450,440" color="var(--talk-accent)" width=2 fragment=true fragment-index=1 position="absolute" >}}
+
+::: {.absolute left=150 top=540 width=1000 size=14}
+`{{</* arrow from="x,y" to="x,y" position="absolute" … */>}}` (slide px; quarto-arrows extension): `width=` `size=`
+(head) `color="var(--talk-accent)"` / `"var(--hl-NAME)"` `head=none|circle|…` `head-start=` `head-end=`
+`waypoints="x,y …" smooth=false` `fragment=true fragment-index=N`
+:::
+
+## Diagrams
+
+<!-- EXPECT: a Mermaid diagram X → Encoder → Q → 𝒢 (theme colours, KaTeX maths, script G) fills
+     its box, centred. -->
+
+::: {.absolute left=300 top=170 width=680 height=500}
+```{mermaid}
+flowchart LR
+  X["$$X_i^T$$"] --> E[\"Encoder"/] --> Q["$$Q_i^T$$"] --> G[/"$$\mathscr{G}_{(2)}^T$$"\]
+```
+:::
+
+## Side panel,<br>in brief {.side-panel}
+
+<!-- EXPECT: static left panel in the accent colour, closed by a black line; no transition.
+     The picture positioned over the panel stays above it. -->
 
 ::: {.section-panel}
 Text in the panel
@@ -366,7 +566,7 @@ Text in the panel
 
 ![](media/image108.png){.absolute left=120 top=420 width=233 height=93}
 
-## Barwise spectrograms {.section-header}
+## First section {.section-header}
 
 <!-- EXPECT: header = full-screen framed block; next slide = summary. The block shrinks into the
      left panel, the frame keeps only its right border, title words glide, words present in only
@@ -376,7 +576,7 @@ Text in the panel
 
 Subtitle with a citation [@marmoret2022barwise]
 
-## Barwise spectrograms {.section-summary}
+## First section {.section-summary}
 
 ::: {.section-panel}
 Subtitle with a citation [@marmoret2022barwise]
@@ -384,14 +584,10 @@ Subtitle with a citation [@marmoret2022barwise]
 
 Slide content, right of the panel; the block shrinks and uncovers it.
 
-::: {.fragment}
-It can have clicks too.
-:::
+## A long section title (Short name) {.section-header color="#9A5D78" duration=1.6 border-width=8px title-size=54px}
 
-## Convolutive Block-Matching (CBM) algorithm {.section-header color="#9A5D78" duration=1.6 border-width=8px title-size=54px}
-
-<!-- EXPECT: per-slide options: purple block, thinner frame, slower morph; "Convolutive
-     Block-Matching ( )" fades in place while "CBM algorithm" moves; explicit reference text.
+<!-- EXPECT: per-slide options: purple block, thinner frame, slower morph; "A long
+     section title ( )" fades in place while "Short name" moves; explicit reference text.
      The summary's wider panel (520 px) gets a larger title and subtitle (50 → 59 px, 24 → 28 px:
      they follow panel-width unless summary-title-size / panel-subtitle-size are given). -->
 
@@ -401,7 +597,7 @@ Options on the heading override the YAML defaults
 An explicit reference line (replaces the automatic one)
 :::
 
-## CBM algorithm {.section-summary panel-width=520px}
+## Short name {.section-summary panel-width=520px}
 
 ::: {.section-panel}
 Wider panel (panel-width=520px)
@@ -409,12 +605,13 @@ Wider panel (panel-width=520px)
 
 The summary inherits the header's options.
 
-## Simple section style {.section-header section-style=simple}
+## Simple section style {.section-header section-style=simple .no-toc}
 
 <!-- EXPECT: "simple" section: the framed colour block with the title only (the subtitle and
      the reference line are dropped), no morph, no summary slide. Choose it per section
      (section-style=simple|full) or for the deck (YAML talk: section: style: simple).
-     (A .section-summary written after a simple header is kept as an ordinary slide.) -->
+     (A .section-summary written after a simple header is kept as an ordinary slide.)
+     Not listed in the outline (.no-toc). -->
 
 Subtitle (not shown in the simple style) [@marmoret2022barwise]
 
@@ -422,9 +619,10 @@ Subtitle (not shown in the simple style) [@marmoret2022barwise]
 
 <!-- EXPECT: on the next slide, boxes with the same data-id move and resize smoothly; the
      filled arrow (a shape box rotated 90°, pointing down) keeps its rotation during and after
-     the morph (the data-id and the position are on the outer div, the rotation on the inner box); the highlighted image keeps
-     its highlight; the three cells of the divided box (one box, thin lines) fly apart into three
-     separate boxes (each cell has its own data-id). Native Quarto/reveal feature. -->
+     the morph (the data-id and the position are on the outer div, the rotation on the inner box);
+     the highlighted image keeps its highlight; the three cells of the divided box (one box, thin
+     lines) fly apart into three separate boxes (each cell has its own data-id). Native
+     Quarto/reveal feature. -->
 
 ::: {.absolute .matrix left=150 top=260 width=120 height=160 background=background data-id=slice1}
 $X_1$
@@ -438,7 +636,7 @@ $X_2$
 []{.absolute .filled left=0 top=0 width=120 height=60 shape=arrow-right style="transform:rotate(90deg)"}
 ::::
 
-![](media/image86_c999e51.png){.absolute left=700 top=260 width=270 height=117 data-id=drum hl="0@(37.8,30,6.3,19)"}
+![](media/image86_c999e51.png){.absolute left=700 top=260 width=270 height=117 data-id=picture hl="0-@(37.8,30,6.3,19)"}
 
 ::: {.absolute left=150 top=500 width=360 height=60 border="1px solid text" cols=3 lines=true}
 - [1]{.cell data-id=slice-a}
@@ -460,7 +658,7 @@ $X_2$
 []{.absolute .filled left=0 top=0 width=120 height=60 shape=arrow-right style="transform:rotate(90deg)"}
 ::::
 
-![](media/image86_c999e51.png){.absolute left=640 top=330 width=540 height=234 data-id=drum hl="0@(37.8,30,6.3,19)"}
+![](media/image86_c999e51.png){.absolute left=640 top=330 width=540 height=234 data-id=picture hl="0-@(37.8,30,6.3,19)"}
 
 ::: {.absolute .matrix left=640 top=600 width=100 height=60 data-id=slice-a}
 1
@@ -474,65 +672,136 @@ $X_2$
 3
 :::
 
-## Clicks
+## Clicks: groups and exits
 
-<!-- EXPECT: click 1 shows A; click 2 shows B and hides A, and C appears 2 s later by itself
-     (delay=2, PowerPoint "after previous" + delay; going back hides it at once); click 3
-     moves the box (motion path) and "D" appears only once the box has arrived (delay=move). -->
+<!-- EXPECT: click 1: the boxes A and B appear together (one click group); click 2: "only at
+     click 2" appears; click 3: it disappears again (.fade-in-then-out) and "gone at click 3"
+     disappears (.fade-out). -->
 
-::: {.absolute .fragment .fade-out left=150 top=220 data-fragment-index=2 size=24}
-::: {.fragment data-fragment-index=1}
-A (click 1, gone at click 2)
-:::
-:::
-
-::: {.absolute .fragment left=150 top=300 data-fragment-index=2 size=24}
-B (click 2)
+::: {.fragment fragment-index=1}
+[A]{.absolute .box left=150 top=220 width=80 height=60}
+[B]{.absolute .box left=250 top=220 width=80 height=60}
 :::
 
-::: {.absolute .fragment left=450 top=300 data-fragment-index=2 delay=2 size=24}
-C (click 2, 2 s later)
+[only at click 2 (`.fade-in-then-out`)]{.absolute .tb .fragment .fade-in-then-out left=150 top=330 size=22 fragment-index=2}
+
+[gone at click 3 (`.fade-out`)]{.absolute .tb .fragment .fade-out left=150 top=400 size=22 fragment-index=3}
+
+::: {.absolute left=150 top=520 width=1000 size=14}
+One block per click: `::: {.fragment fragment-index=N}` around every object of that click · `.fade-in-then-out`:
+that click only (click N+1 must exist) · `.fade-out`: shown until click N
 :::
 
-::: {.absolute .fragment .move width=100% height=100% left=0 top=0 data-fragment-index=3 style="--dx:400px;--dy:0px"}
-::: {.absolute .matrix left=150 top=400 width=220 height=80}
-moves at click 3
-:::
+## Clicks: timing
+
+<!-- EXPECT: "fades out by itself" is visible when the slide arrives and fades out 0.8 s later
+     (.fade-after); "fades out after 3 s" does the same 3 s after the arrival (fade-delay=3).
+     Click 1: "B" appears, and "C" 2 s later by itself (delay=2, PowerPoint "after previous" +
+     delay); going back hides both at once. -->
+
+[fades out by itself (`.fade-after`)]{.absolute .tb .fade-after left=150 top=200 size=22 color=accent}
+[fades out after 3 s (`fade-delay=3`)]{.absolute .tb .fade-after left=650 top=200 size=22 color=accent fade-delay=3}
+
+[B (click 1)]{.absolute .tb .fragment left=150 top=320 size=22 fragment-index=1}
+[C (click 1, 2 s later: `delay=2`)]{.absolute .tb .fragment left=450 top=320 size=22 fragment-index=1 delay=2}
+
+::: {.absolute left=150 top=520 width=1000 size=14}
+`delay=S` on a fragment: appears S s after its click · `delay=move` / `delay=end`: after a motion path /
+a sound (their slides) · `.fade-after`: shown when the slide arrives, fades out by itself (`fade-delay=S`)
 :::
 
-::: {.absolute .fragment left=800 top=400 data-fragment-index=3 delay=move size=24}
-D (click 3, after the move)
+## Motion paths
+
+<!-- EXPECT: click 1: the three grey bars and the box slide 300 px left together (one .move
+     around them, dx=-300), and "arrived" appears only once they have arrived (delay=move). Going
+     back, they return at once. -->
+
+::: {.fragment .move fragment-index=1 dx=-300}
+[]{.absolute left=800 top=200 width=200 height=20 background="#999"}
+[]{.absolute left=800 top=230 width=200 height=20 background="#bbb"}
+[]{.absolute left=800 top=260 width=200 height=20 background="#ddd"}
+[moves at click 1]{.absolute .matrix left=800 top=310 width=200 height=70}
 :::
 
-## Audio
+[arrived (`delay=move`)]{.absolute .tb .fragment left=150 top=430 size=22 fragment-index=1 delay=move}
+
+::: {.absolute left=150 top=540 width=1000 size=14}
+`::: {.fragment .move fragment-index=N dx= dy=}` around the objects (px) · `delay=move` on a fragment of the
+same click: it appears when the move has ended
+:::
+
+## Recap: the built slide
+
+<!-- EXPECT: a small diagram built click by click from an included file (include shortcode, _recap.qmd):
+     "Step one" at once, click 1 an arrow and "Step two", click 2 an arrow and "Step three", and the
+     note "(only at click 1)" shown at click 1 only. -->
+
+{{< include _recap.qmd >}}
+
+## Recap: everything at once
+
+<!-- EXPECT: the same included diagram inside ::: {.static}: everything shown at once, no click
+     on this slide; the note "(only at click 1)" is dropped (an object that ends hidden). -->
+
+::: {.static}
+{{< include _recap.qmd >}}
+:::
+
+[`::: {.static}` `{{</* include _recap.qmd */>}}` `:::`]{.absolute left=150 top=600 size=14}
+
+## Audio: buttons
 
 <!-- EXPECT: icon 1 plays on click; icon 2 plays when the slide opens (after 0.5 s); icon 3
-     appears and plays at click 1; click 2 starts the "v1" sound; click 3 stops all sounds;
-     the image is itself a play button; A stops everything. Blocked sounds turn red.
-     Click 4 plays the last sound (play=4); its "→ …" text appears only when that sound ends
-     (delay=end, about 4 s; at once if A stops it); going back hides it. -->
+     appears and plays at click 1; icon 4 loops at 60 % volume, with its label; the scissors
+     picture is itself a play button (data-audio). A stops everything; blocked sounds turn red. -->
 
-- Click to play: {{< audio media/media5.mp3 label="Come Together, intro" >}}
+- Click to play: {{< audio media/media5.mp3 label="Sound one" >}}
 - Plays when the slide opens: {{< audio media/media6.mp3 autoplay=true delay=0.5 >}}
 - Appears and plays on click 1: {{< audio media/media10.mp3 fragment=1 autoplay=true >}}
-- Loop, volume, id (started by click 2): {{< audio media/media11.mp3 id=v1 label="Verse 1" loop=true volume=0.6 >}}
+- Loop, volume, label: {{< audio media/media11.mp3 label="Sound two" loop=true volume=0.6 >}}
 - Any element can be a button (`data-audio`):
-- Plays at click 4 (`play=4`): []{.audio-btn data-audio="media/media2.mp3" play=4} [→ shown when the sound ends (`delay=end`)]{.fragment fragment-index=4 delay=end}
 
-![](media/ciseaux.png){.absolute left=900 top=420 width=60 height=60 data-audio="media/media12.mp3"}
+![](media/ciseaux.png){.absolute left=900 top=440 width=60 height=60 data-audio="media/media12.mp3"}
 
-[]{.fragment data-fragment-index=2 data-play="v1"}
-[]{.fragment data-fragment-index=3 data-stop-audio=true}
+## Audio: sounds at clicks
+
+<!-- EXPECT: no sound when the slide opens. Click 1 starts the "v2" sound (a trigger
+     []{.fragment data-play="v2"}); click 2 stops all sounds (data-stop-audio); click 3 plays the
+     sound of the last icon (play=3), and its "→ …" text appears only when that sound ends
+     (delay=end, about 4 s; at once if A stops it); going back hides it. -->
+
+- Started by click 1: {{< audio media/media11.mp3 id=v2 label="Sound two" >}}
+- Stopped by click 2
+- Plays at click 3 (`play=3`): []{.audio-btn data-audio="media/media2.mp3" play=3} [→ shown when the sound ends (`delay=end`)]{.fragment fragment-index=3 delay=end}
+
+[]{.fragment fragment-index=1 data-play="v2"}
+[]{.fragment fragment-index=2 data-stop-audio=true}
+
+## Audio: icons in columns
+
+<!-- EXPECT: the speaker icons of each item are aligned in two columns, 300 px and 380 px from
+     the text's left edge, on the first line of their item (audio-col="300 380"), whatever the
+     length of the item's text. -->
+
+::: {.absolute .tb .body left=144 top=200 width=700 audio-col="300 380"}
+- Short {{< audio media/media5.mp3 >}} {{< audio media/media6.mp3 >}}
+  - a sub-item
+- A longer item {{< audio media/media11.mp3 >}}
+:::
+
+::: {.absolute left=144 top=460 width=1000 size=14}
+`audio-col="x1 x2"` on the box: the icons of each item (shortcode or `.audio-btn`) sit x px from the text's left edge
+:::
 
 ## Citations
 
-<!-- EXPECT: labels [KC07], [KC07, Mar+20] with own labels in bold; the slide's references
+<!-- EXPECT: labels [SB03], [KC07, **Mar+20**] with own labels in bold; the slide's references
      listed at its bottom (incl. the refs-only one); a full reference in the text. -->
 
 - One or several: [@smaragdis2003nonnegative], [@kim2007nonnegative; @marmoret2020uncovering]
 - With prefix and suffix: [see @foote2000automatic, p. 3]
 - Author in text: @kim2007nonnegative showed…
-- Smaller, as in the deck: NTD [[@marmoret2022gretsi]]{size=14}
+- Smaller, as in the deck: text [[@marmoret2022gretsi]]{size=14}
 - Full reference in the text: [@foote2000automatic]{.fullcite}
 - In the list but not in the text: [[@grill2015music]]{.refs-only}
 
@@ -545,22 +814,23 @@ A citation [@goto2002rwc] without the per-slide list.
 ## Highlights on objects
 
 <!-- EXPECT: per click, parts of the objects turn red/coloured; text stays above the colour and
-     borders stay crisp. G has lines=true: thin lines between its 3×3 cells, visible over
-     the coloured cells too, and no double line along its border. Click 0 = already on when the slide opens. Press R: every area,
-     its steps and the grids are outlined. -->
+     borders stay crisp. G has lines=true: thin lines between its 3×3 cells, visible over the
+     coloured cells too, and no double line along its border. Click 0 = already on when the slide
+     opens. H gets a rounded halo (hl-radius=20, hl-pad=10) at click 4. Press R: every area, its
+     steps and the grids are outlined. -->
 
 ::: {.absolute .matrix left=150 top=230 width=90 height=200 cols=3 hl="1@1; 2@2; 3-@3"}
 $W$
 :::
 
-::: {.absolute .matrix left=300 top=230 width=200 height=200 cols=3 rows=3 lines=true hl="0@1,1; 1@2,2; 2@*,3 teal; 3-@1-2,1-2 intro"}
+::: {.absolute .matrix left=300 top=230 width=200 height=200 cols=3 rows=3 lines=true hl="0@1,1; 1@2,2; 2@*,3 teal; 3-@1-2,1-2 custom"}
 $G$
 :::
 
 ::: {.absolute .matrix left=300 top=170 width=200 height=30 cols=4 hl="1@1; 2@2; 3@3; 4-@4"}
 :::
 
-::: {.absolute .matrix left=560 top=230 width=250 height=90 hl="4 teal" hl-shape=round hl-pad=10 size=18}
+::: {.absolute .matrix left=560 top=230 width=250 height=90 hl="4 teal" hl-radius=20 hl-pad=10 size=18}
 $H$: whole object, halo
 :::
 
@@ -580,23 +850,63 @@ Inline text too: a [highlighted phrase]{hl="2 gold"} in a sentence.
 
 ::: {.absolute left=150 top=600 size=11}
 `hl="STEPS@AREA COLOUR; …"` · steps `2`, `2-4`, `2-`, `0` · area: grid cell `@k`, `@c,r`, `@*,3`, `@1-2,1-2`, rectangle `@(x,y,w,h)` in % or px, nothing = whole object<br>
-`cols`/`rows` (grid) · `lines` · `hl-color` · `hl-shape=round|ellipse` · `hl-radius` · `hl-pad` (halo) · `hl-opacity` · `hl-style=outline` · palette: red teal gold orange purple green brown navy black + YAML
+`cols`/`rows` (grid) · `lines` · `hl-color` · `hl-shape=round|ellipse` · `hl-radius` · `hl-pad` (halo) · `hl-opacity` · `hl-style=outline` · palette: red teal gold orange purple green brown navy black lime cyan + YAML
 :::
 
-## Highlights in equations, annotations
+## Sequence highlights
 
-<!-- EXPECT: parts of the equation get an oval / rounded box at their clicks, sized to the part;
-     labels with arrows point at the named parts and boxes, from wherever they are rendered. -->
+<!-- EXPECT: click 1: the diagonal cells of the grid get the colours in order: custom (yellow, a deck colour name),
+     teal, purple, orange (hl="1-@diag …"). Click 2: the cells of the bar on the right, from left
+     to right (hl="2-@cols …"). Click 3: the cells of the column, from top to bottom
+     (hl="3-@rows …"). -->
+
+::: {.absolute left=150 top=180 width=400 height=400 border="1px solid black" cols="1 1 2 1" rows="1 1 2 1" hl="1-@diag custom teal purple orange"}
+:::
+
+::: {.absolute left=650 top=180 width=400 height=60 border="1px solid black" cols=4 lines=true hl="2-@cols custom teal purple orange"}
+:::
+
+::: {.absolute left=650 top=300 width=60 height=280 border="1px solid black" rows=4 lines=true hl="3-@rows custom teal purple orange"}
+:::
+
+[`@diag c1 c2 …` (cell k,k) · `@cols …` (cells of row 1) · `@rows …` (cells of column 1)]{.absolute left=150 top=610 size=14}
+
+## Highlights in equations
+
+<!-- EXPECT: parts of the equation get an oval (\hlo) or a rounded box (\hl) at their clicks,
+     sized to the part: click 1 X_(2) teal oval, click 2 ≈ orange oval, click 3 Q and G(W⊗H)^T
+     purple. Below, coloured thick vertical ticks (\tick{colour}) in the text and in a fraction. -->
+
+::: {.absolute left=150 top=230 width=1000 size=32}
+$$\hlo[x2]{1-}{teal}{X_{(2)}} \mathrel{\hlo[approx]{2-}{orange}{\approx}} \hlo[q]{3-}{purple}{Q}\,\hl[gwh]{3-}{purple}{G_{(2)}(W \otimes H)^T}$$
+:::
+
+::: {.absolute .tb .body left=150 top=420 width=900}
+- Green $\tick{lime}$, red $\tick{red}$, black $\tick{black}$: a ratio $= \frac{\tick{lime}}{\tick{red} + \tick{lime}}$
+:::
+
+::: {.absolute left=150 top=560 width=1000 size=14}
+`\hl[name]{STEPS}{colour}{part}` (rounded box) · `\hlo[name]{…}` (oval) · `\eqmark{name}{part}` (a name only, for
+annotations) · `\tick{colour}` · colours: palette or theme names
+:::
+
+## Annotations
+
+<!-- EXPECT: labels with arrows point at the named parts of the equation and at a box, from
+     wherever they are rendered: "no arrow, no box" under ⟺ from the start; the \eqmark label
+     above ⊗ (thin arrow, no box) from the start; click 1 the teal oval and a label below it in the
+     highlight's colour with a sub-label; click 2 a label above ≈; click 3 one label with two
+     arrows (Q and G…); click 4 a label right of the navy box; click 5 a label at a fixed place. -->
 
 ::: {.absolute left=150 top=250 width=1000 size=32}
-$$\mathrel{\eqmark{iff}{\Longleftrightarrow}} \hlo[x2]{1-}{teal}{X_{(2)}} \mathrel{\hlo[approx]{2-}{orange}{\approx}} \hlo[q]{3-}{purple}{Q}\,\hl[gwh]{3-}{purple}{G_{(2)}(W \mathbin{\eqmark{kron}{\otimes}} H)^T}$$
+$$\mathrel{\eqmark{iff}{\Longleftrightarrow}} \hlo[x2]{1-}{teal}{X_{(2)}} \mathrel{\eqmark{approx}{\approx}} \eqmark{q}{Q}\,\eqmark{gwh}{G_{(2)}(W \mathbin{\eqmark{kron}{\otimes}} H)^T}$$
 :::
 
-::: {.annot to=iff pos=below dist=4 steps=0 arrow=none box=false color=black}
+::: {.annot to=iff pos=below dist=4 steps=0- arrow=none box=false color=black}
 “no arrow, no box”
 :::
 
-::: {.annot to=kron pos=above dist=40 steps=0-3 arrow=thin box=false color=black size=18}
+::: {.annot to=kron pos=above dist=40 steps=0- arrow=thin box=false color=black size=18}
 \\eqmark: named, not highlighted
 :::
 
@@ -624,213 +934,31 @@ to= an element id, pos=right
 fixed place (x, y)
 :::
 
-## Arrows, click groups, diagrams
+## Annotations: arrows to the label
 
-<!-- EXPECT: a thin black arrow and a thick teal line are always visible. Click 1: a box, an arrow and
-     the label "t" appear together; click 2: they all disappear (fade-in-then-out) and a teal arrow is
-     drawn. Between them, a scissors picture over a dashed cyan line (a .sep with dash=). On the right, a
-     Mermaid diagram X → Encoder → Q (theme colours, KaTeX maths, script G) fills its box, centred. -->
+<!-- EXPECT: at click 1 the label "F" is placed right of the two lines and two thin accent arrows
+     go FROM the right end of each line TO the label (dir=from, anchor=right). -->
 
-{{< arrow from="120,250" to="420,250" width=1 size=6 position="absolute" >}}
-{{< arrow from="120,300" to="420,300" color="var(--talk-accent)" width=4 head=none position="absolute" >}}
-
-::: {.fragment .fade-in-then-out fragment-index=1}
-[]{.absolute left=120 top=360 width=200 height=120 border="1px solid black"}
-{{< arrow from="120,500" to="314,500" width=1 size=6 position="absolute" >}}
-[$t$]{.absolute .tb left=200 top=505}
+::: {.absolute .tb .body left=150 top=220 width=560}
+- Green $\tick{lime}$, red $\tick{red}$, black $\tick{black}$
+  - [Ratio A $= \frac{\tick{lime}}{\tick{red} + \tick{lime}}$]{#eq-p}
+  - [Ratio B $= \frac{\tick{lime}}{\tick{black}}$]{#eq-r}
 :::
 
-{{< arrow from="120,600" to="400,560" color="var(--talk-accent)" width=2 fragment=true fragment-index=2 position="absolute" >}}
-![](media/ciseaux.svg){.absolute left=500 top=240 width=24 height=33}
-[]{.sep .absolute left=510 top=273 height=90 thickness=4 color=cyan dash="12 8"}
-[`.sep … dash="12 8"`]{.absolute .tb left=440 top=370 width=200 size=12}
-
-::: {.absolute left=640 top=200 width=560 height=460}
-```{mermaid}
-flowchart TB
-  X["$$X_i^T$$"] --> E[\"Encoder"/] --> Q["$$Q_i^T$$"] --> G[/"$$\mathscr{G}_{(2)}^T$$"\]
-```
+::: {.annot to="eq-p eq-r" pos=right dist=120 steps=1- dir=from anchor=right arrow=thin box=false color=accent}
+[$F$]{color=black size=28}
 :::
 
-## Boxes, shapes and block diagrams
-
-<!-- EXPECT: top row: a framed .box "Q", a .filled box "Filled" (accent fill, dark outline, light
-     text), a .filled arrow-right "NTD", a down arrow, a parallelogram and a cube with "𝒳" in its
-     front face. Bottom: a horizontal .flow X → Encoder (trapezoid narrowing) → Q → Decoder (widening)
-     → X̂, boxes centred vertically, "ft" dimension arrows left of X and right of X̂ (dim-left /
-     dim-right), the labels of the narrow boxes turned a quarter turn (.rot-l, read bottom-up), a
-     KaTeX arrow labelled a(). -->
-
-[$Q$]{.absolute .box left=110 top=200 width=90 height=70}
-[Filled]{.absolute .filled left=230 top=200 width=140 height=70}
-[NTD]{.absolute .filled left=400 top=200 width=150 height=70 shape=arrow-right}
-[]{.absolute .filled left=580 top=190 width=50 height=90 shape=arrow-down}
-[$Q$]{.absolute .box left=660 top=200 width=120 height=70 shape=parallelogram}
-[$\mathscr{X}$]{.absolute .box left=820 top=170 width=160 height=130 shape=cube depth=30}
-
-::: {.absolute .flow left=180 top=360 width=900 height=280 size=18 gap=20}
-[$X_i^T$]{.box .rot-l width=42 height=100% dim-left="ft"}
-[Encoder]{shape=shrink width=150 height=90% taper=30%}
-[$Q_i^T$]{.box .rot-l width=42 height=70}
-$\xrightarrow{\;a()\;}$
-[Decoder]{shape=grow width=150 height=90% taper=30%}
-[$\hat{X}_i^T$]{.box .rot-l width=42 height=100% dim-right="ft"}
+::: {.absolute left=150 top=540 width=1000 size=14}
+`::: {.annot to="id1 id2" … dir=from anchor=right}`: the arrows point to the label, from the middle of that side
+of the targets (`anchor=right|left|top|bottom`)
 :::
 
-## Clicks: groups, moves, sounds, recaps
-
-<!-- EXPECT: click 1: the three grey bars slide left by 300 px together (.move dx=-300);
-     click 2: "A" and "B" appear together (one click group). The speaker icon is visible from the
-     start; its sound plays at click 3 (play=3). Below, the boxes of the group shown at once
-     (.static: no clicks). Under the title a list with an empty line (`-` alone) between two items. -->
-
-::: {.absolute .tb .body left=144 top=170 width=600}
-- First item
--
-- After an empty line
-:::
-
-::: {.fragment .move fragment-index=1 dx=-300}
-[]{.absolute left=800 top=200 width=200 height=20 background="#999"}
-[]{.absolute left=800 top=230 width=200 height=20 background="#bbb"}
-[]{.absolute left=800 top=260 width=200 height=20 background="#ddd"}
-:::
-
-::: {.fragment fragment-index=2}
-[A]{.absolute .box left=800 top=330 width=80 height=60}
-[B]{.absolute .box left=900 top=330 width=80 height=60}
-:::
-
-[]{.absolute .audio-btn left=1050 top=340 data-audio="media/media5.mp3" play=3}
-
-::: {.static}
-::: {.fragment fragment-index=1}
-[shown at once]{.absolute .filled left=144 top=520 width=220 height=60}
-:::
-:::
-
-## Cards, separators, columns with lines
-
-<!-- EXPECT: three cards (title bar in the shape style, framed body with "•" items, text centred
-     vertically), the same height; the third one appears at click 1 and has a footer in the light
-     accent colour. Under them: a 1 px black horizontal line, a thick vertical accent line (a
-     .sep each), and two columns separated by a thin line in the middle of their gap (lines=true);
-     the right column holds a box at 50 % opacity (opacity=). No arrow shortcode, no style=. -->
-
-::: {.absolute .columns left=144 top=170 width=1000 gap=40}
-::: {.column .card height=230}
-### Card one
-- A list
-- in the body
-:::
-::: {.column .card height=230 align=center}
-### Card two
-Plain text, centred
-:::
-::: {.column .card .fragment height=230 fragment-index=1}
-### Card three (click 1)
-- With a footer
-
-::: {.card-foot}
-*Footer*
-:::
-:::
-:::
-
-[]{.sep .absolute left=144 top=430 width=1000}
-[]{.sep .absolute left=640 top=445 height=240 thickness=6 color=accent}
-
-::: {.absolute .columns left=144 top=460 width=440 gap=40 lines=true size=16}
-::: {.column}
-`:::: {.columns lines=true}`: a line in each gap
-:::
-::: {.column}
-`lines="2px accent"` for a thicker, coloured one
-:::
-:::
-
-[`background=accent opacity=0.5`]{.absolute .tb left=700 top=460 width=380 height=60 background=accent opacity=0.5 align=center}
-
-::: {.absolute left=700 top=560 width=440 size=14}
-`::: {.card}` `### Title` body `::: {.card-foot} … :::` · `::: {.column .card}` in a row ·
-`[]{.sep .absolute left= top= width=|height= thickness= color=}`
-:::
-
-## Matrices and tensors {auto-animate=true}
-
-<!-- EXPECT: a matrix "X" (6 rows, lines) with its dimension arrows b (left, up) and tf (bottom,
-     right) and their labels in maths, 14 pt (dim-size=14; 18 pt elsewhere); a cube "𝒳" with f (left of the front face), t (under it)
-     and b along the top-left edge; a parallelogram "Q" with b along its slanted side and r_b under
-     it; a 6-cell bar whose cells are coloured (cells=) with its f / t arrows. On the next slide
-     (morph) the cells of the bar fly into the slices of a stack (cell-id / stack-id "tfb") and the
-     f / t arrows glide with them (dim-id "tfb"). -->
-
-[$$X$$]{.absolute .matrix left=144 top=200 width=300 height=110 rows=6 lines=true dim-left=b dim-bottom=tf dim-size=14}
-
-::: {.absolute .tb .va-ctr left=560 top=180 width=200 height=160 align=center shape=cube depth=50 dim-left=f dim-bottom=t dim-depth=b}
-$\mathscr{X}$
-:::
-
-[$$Q$$]{.absolute .tb .va-ctr left=900 top=190 width=90 height=80 align=center shape=parallelogram slant=45 dim-depth=b dim-bottom="r_b"}
-
-::: {.absolute left=144 top=420 width=360 height=110 border="1px solid black" cols=6 lines=true cells="shade1 shade2 shade3 shade4 shade5 shade6" cell-id=tfb}
-:::
-[]{.absolute left=144 top=420 width=60 height=110 dim-left=f dim-bottom=t dim-id=tfb}
-
-::: {.absolute left=560 top=400 width=600 size=14}
-`[$X$]{.absolute .matrix … rows=6 lines=true dim-left=b dim-bottom=tf}` · on a cube / stack also
-`dim-depth=`, on a parallelogram the depth arrow follows the slanted side · `dim-top=`, `dim-right=`
-· labels are maths (`r_b` → $r_b$; `$…$` or text otherwise), `dim-size=` pt · `cells="c1 c2 …"` colours the cells of a
-grid box, `cell-id=P` gives them `data-id` P-1, P-2… · `dim-id=P` names the arrows P-left, P-bottom…
-:::
-
-## Matrices and tensors {auto-animate=true}
-
-[]{.absolute .matrix left=400 top=300 width=60 height=110 stack="shade1 shade2 shade3 shade4 shade5 shade6" stack-id=tfb depth=80 lift=70 dim-left=f dim-bottom=t dim-depth=b dim-id=tfb}
-
-::: {.absolute left=560 top=300 width=600 size=14}
-`[]{.absolute .matrix … stack="c1 … cn" stack-id=P depth=80 lift=70 dim-left=f dim-bottom=t dim-depth=b dim-id=P}`:
-a stack of n slices (the first one in front, the others `depth` px to the right and `lift` px up).
-:::
-
-## Checks, sound columns, fading text
-
-<!-- EXPECT: left: a list whose items have a green check (.yes) or a red cross (.no) as the marker,
-     then an item whose marker is the scissors picture, 40 px wide (mark=, mark-size=), the text
-     80 px from the left (indent=80); right: a list whose speaker icons are aligned in two columns
-     at the right of their lines (audio-col="x1 x2"), the second item's icon appearing and playing at
-     click 1. Under the title, "fades out by itself" is visible when the slide arrives and fades out
-     0.8 s later (.fade-after). -->
-
-[fades out by itself (.fade-after)]{.absolute .tb .fade-after left=700 top=90 size=20 color=accent}
-
-::: {.absolute .tb .body left=144 top=200 width=440 indent=80}
-- [State of the art]{.yes}
-- [Time consuming]{.no}
-- [Needs annotations]{.no}
-- [A picture as marker]{mark=media/ciseaux.svg mark-size=40}
-:::
-
-::: {.absolute .tb .body left=640 top=200 width=560 audio-col="300 380"}
-- Intro {{< audio media/media5.mp3 >}} {{< audio media/media6.mp3 >}}
-  - a sub-item
-- Verse {{< audio media/media11.mp3 fragment=1 autoplay=true >}}
-:::
-
-::: {.absolute left=144 top=460 width=1000 size=14}
-`- [text]{.yes}` / `{.no}` (whole lists: `.b-check` / `.b-cross`) · `- [text]{mark=icon.svg mark-size=40}` ·
-`indent="80 50"` (text of level 1 at 80 px, deeper levels 50 px further) · `audio-col="x1 x2"` on the box: the
-icons of each item (shortcode or `.audio-btn`) sit x px from the text's left edge · `.fade-after`
-(`fade-delay=S` for another delay)
-:::
-
-## Edges, reversed annotations {top=40}
+## Edges {top=40}
 
 <!-- EXPECT: three round nodes; at click 1 an arrow "2" from a to b (edge of circle to edge of
      circle), at click 2 arrows "5" (b → c) and "1" (a → c, label below the arrow); the score ":2"
-     appears inside b at click 1. Right: an equation with coloured ticks (	ick); at click 3 the
-     label "F" is placed right of the two lines and two thin arrows go FROM the right end of each
-     line TO the label (dir=from, anchor=right). -->
+     appears inside b at click 1. -->
 
 [$a$]{#na .absolute .filled .nowrap left=150 top=250 width=70 height=70 color=white radius=50%}
 [$b$[$\,:2$]{.fragment fragment-index=1}]{#nb .absolute .filled .nowrap left=400 top=160 width=80 height=70 color=white radius=50%}
@@ -840,27 +968,9 @@ icons of each item (shortcode or `.audio-btn`) sit x px from the text's left edg
 [5]{.edge from=nb to=nc steps=2-}
 [1]{.edge from=na to=nc steps=2- shift=-18}
 
-::: {.absolute .tb .body left=620 top=200 width=560}
-- Valid $\tick{lime}$, invalid $\tick{red}$, annotation $\tick{black}$
-  - [Precision $= \frac{\tick{lime}}{\tick{red} + \tick{lime}}$]{#eq-p}
-  - [Recall $= \frac{\tick{lime}}{\tick{black}}$]{#eq-r}
-:::
-
-::: {.annot to="eq-p eq-r" pos=right dist=120 steps=3- dir=from anchor=right arrow=thin box=false color=accent}
-[$F$]{color=black size=28}
-:::
-
-::: {.absolute left=150 top=520 width=1000 size=14}
-`[label]{.edge from=ID to=ID steps= color= width= shift= along=}` · `::: {.annot … dir=from anchor=right}`: the
-arrows point to the label, from the middle of that side of the targets · `\tick{colour}` in maths: a thick tick
-:::
-
-## Diagonal highlights {top=40}
-
-<!-- EXPECT: the title sits higher than usual (## … {top=40}). At click 1 the diagonal cells of the
-     grid get the colours in order: intro (yellow), teal, purple, orange (hl="1-@diag …"). -->
-
-::: {.absolute left=400 top=180 width=400 height=400 border="1px solid black" cols="1 1 2 1" rows="1 1 2 1" hl="1-@diag intro teal purple orange"}
+::: {.absolute left=150 top=540 width=1000 size=14}
+`[label]{.edge from=ID to=ID steps= color= width= head= shift= along= size=}`: an arrow from the edge of #from to
+the edge of #to, the label beside its middle (`shift` px to its left, `along` px further)
 :::
 
 ## 3D images

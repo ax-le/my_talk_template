@@ -53,6 +53,8 @@ quarto preview talk.qmd                                             #    "format
 
 Because `_extensions/` is a clone, a template change made from inside any deck is a normal `git commit` + `git push` *in `_extensions/`*, and the other decks get it with `git -C _extensions pull`. If you already have the clone elsewhere on your machine, `git clone /path/to/my_talk_template _extensions` works too (then `git -C _extensions remote set-url origin git@github.com:ax-le/my_talk_template.git`).
 
+**Keeping the clones in sync (Windows).** `all_the_pres/` holds `sync.ps1` and three double-click wrappers: `pull.cmd` (start of a work session: updates `my_talk_template/`, every deck's `_extensions/` and the decks repository), `push.cmd` (end of a session: commits and pushes the template clone you edited first, pulls it into every other clone, then commits and pushes the decks; asks for a commit message) and `status.cmd` (what is modified, ahead or behind, nothing changed). In a terminal: `.\sync.ps1 pull`, `.\sync.ps1 push "message"`, `.\sync.ps1 status`. It never forces anything and stops with an explanation on a conflict, an unfinished merge, or when the same template file was changed in two clones (keep one version, then run it again).
+
 Two alternatives, if you do not want a clone per deck:
 
 - `quarto add ax-le/my_talk_template` copies `talk/` and `arrows/` into your deck's `_extensions/` (no git link: run `quarto update` to get newer versions).

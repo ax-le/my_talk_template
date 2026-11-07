@@ -1,0 +1,16 @@
+<!-- Included twice by template.qmd: built click by click on "Recap: the built slide", shown at once
+     inside ::: {.static} on "Recap: everything at once" (the PhD deck does this with _outline.qmd). -->
+
+[Step one]{.absolute .filled left=150 top=250 width=220 height=70 size=22}
+
+::: {.fragment fragment-index=1}
+{{< arrow from="370,285" to="500,285" color="var(--talk-accent)" width=4 size=3 position="absolute" >}}
+[Step two]{.absolute .filled left=510 top=250 width=220 height=70 size=22}
+:::
+
+[(only at click 1)]{.absolute .tb .fragment .fade-in-then-out left=510 top=340 size=16 fragment-index=1}
+
+::: {.fragment fragment-index=2}
+{{< arrow from="730,285" to="860,285" color="var(--talk-accent)" width=4 size=3 position="absolute" >}}
+[Step three]{.absolute .box left=870 top=250 width=220 height=70 size=22}
+:::
