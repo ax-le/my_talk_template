@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Rebuild index.qmd from the PowerPoint, then render.
-#   usage: _extensions/tools/build_deck.sh path/to/talk.pptx      (run from the deck folder, whose
-#          _extensions/ is a clone of the template repository)
+#   usage: ../_extensions/tools/build_deck.sh path/to/talk.pptx   (run from a deck folder of the project
+#          all_the_pres/, whose _extensions/ is a clone of the template repository; then
+#          python ../_extensions/tools/share_media.py --root .. moves media shared with other talks)
 # Steps: pptx2qmd (conversion) → sections (section / side-panel slides) → cites (references → [@key])
 #        → highlights (red overlays → hl=) → deck_patches (hand rewrites) → segments (rows of boxes → grid boxes) → captions (picture + name) → tidy (short attributes) → simplify (hand-editable style) → header + render
 # For NEW talks only: the PhD deck (index.qmd) is now edited by hand and must not be rebuilt.

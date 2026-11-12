@@ -53,7 +53,30 @@ quarto preview talk.qmd                                             #    "format
 
 Because `_extensions/` is a clone, a template change made from inside any deck is a normal `git commit` + `git push` *in `_extensions/`*, and the other decks get it with `git -C _extensions pull`. If you already have the clone elsewhere on your machine, `git clone /path/to/my_talk_template _extensions` works too (then `git -C _extensions remote set-url origin git@github.com:ax-le/my_talk_template.git`).
 
-**Keeping the clones in sync (Windows and Linux).** `all_the_pres/` holds `sync.ps1` (Windows) / `sync.sh` (Linux, macOS) and their wrappers `pull.cmd` / `pull.sh`, `push.cmd` / `push.sh`, `status.cmd` / `status.sh`. All paths are relative to the script, and the folders are listed again at every run: a new deck folder (a sub-folder of `all_the_pres/` holding a `.qmd`) is picked up, and `pull` / `push` clone the template into its `_extensions/` if it has none. The wrappers: `pull.cmd` (start of a work session: updates `my_talk_template/`, every deck's `_extensions/` and the decks repository), `push.cmd` (end of a session: commits and pushes the template clone you edited first, pulls it into every other clone, then commits and pushes the decks; asks for a commit message) and `status.cmd` (what is modified, ahead or behind, nothing changed). In a terminal: `.\sync.ps1 pull`, `.\sync.ps1 push "message"`, `.\sync.ps1 status` (Linux: `./sync.sh pull`, `./sync.sh push "message"`, `./sync.sh status`). It never forces anything and stops with an explanation on a conflict, an unfinished merge, or when the same template file was changed in two clones (keep one version, then run it again).
+**Keeping things in sync.** In `all_the_pres/` there are two repositories, plain git: the decks repository (`all_the_pres/`) and the template's own (`_extensions/`, nested and git-ignored by the decks one). Start of a session: `git pull` and `git -C _extensions pull`. End: `git -C _extensions add -A`, `commit`, `push` if the template changed, then the same in `all_the_pres/`. Missing clone: `git clone git@github.com:ax-le/my_talk_template.git _extensions`. Template changes are pushed first, so that the decks always match a template commit that exists on GitHub.
+
+### Several talks: one project, one clone, shared media (Axel's set-up: `all_the_pres/`)
+
+With several talks, make the folder holding them ONE Quarto project: a single clone of the template, media shared between talks stored once, and one website.
+
+```
+all_the_pres/
+  _quarto.yml          the project: renders every <deck>/index.qmd (+ the tour) into _site/
+  index.qmd            landing page of the website: one link per talk
+  _extensions/         the ONLY clone of this repository (git-ignored)
+  _media/              media used by several talks:   ![](../_media/logos/irisa.png)
+  phd-defense-quarto/  one folder per talk: index.qmd, refs.bib, media/ (files only this talk uses);
+                       no _quarto.yml of its own (it would make it a separate project)
+  _site/               the website (git-ignored), built by  quarto render
+```
+
+```bash
+quarto preview phd-defense-quarto/index.qmd           # one talk, live
+quarto render                                         # every talk + the tour + the landing page → _site/
+python _extensions/tools/share_media.py [--apply]     # files found in several talks' media/ → _media/
+```
+
+`share_media.py` is a dry run unless given `--apply`: it moves every file that two talks hold byte for byte into `_media/` and rewrites their paths (`media/x.png` → `../_media/x.png`, in images, `audio=`, `mark=`, `logos:`…). A new talk: a new folder with an `index.qmd` (`format: talk-revealjs`), a line in the root `index.qmd`; nothing else. `_site/` is the whole website: the GitHub workflow of `all_the_pres` publishes it on every push (or copy it to any web server); relative paths, so it also works offline from the disk.
 
 Two alternatives, if you do not want a clone per deck:
 
@@ -64,8 +87,10 @@ Two alternatives, if you do not want a clone per deck:
 
 The tour (`tour/template.qmd`: every feature, one slide each; its `EXPECT:` comments say what each slide must do) is also rendered **from a deck**, never from this repository. Quarto treats a file under `_extensions/` as outside the project unless the deck's `_quarto.yml` lists it, so a deck meant for the template itself contains nothing but that file:
 
+In `all_the_pres/` the root `_quarto.yml` already lists it: `quarto preview _extensions/tour/template.qmd` there. For a lone clone:
+
 ```yaml
-# _quarto.yml of the "template" deck (all_the_pres/template in Axel's set-up)
+# _quarto.yml of a folder holding only the tour
 project:
   type: default
   render:
@@ -77,7 +102,7 @@ git clone git@github.com:ax-le/my_talk_template.git _extensions
 quarto preview _extensions/tour/template.qmd      # or: quarto render
 ```
 
-A plain `quarto preview` in that folder opens the project root, where there is no page (the only output is `_extensions/tour/template.html`), hence a "Not Found": either give the file name as above, or keep a one-line `index.html` at the root that redirects to `_extensions/tour/template.html` (the `template` deck does).
+A plain `quarto preview` in that folder opens the project root, where there is no page (the only output is `_extensions/tour/template.html`), hence a "Not Found": either give the file name as above, or keep a one-line `index.html` at the root that redirects to `_extensions/tour/template.html`.
 
 Any real deck can list `_extensions/tour/template.qmd` next to its own `.qmd` in the same way, to check the template after a change. Notes for AI agents: `AGENTS.md`.
 
