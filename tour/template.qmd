@@ -10,6 +10,7 @@ html-math-method:                 # only because this file lives in _extensions/
   method: katex                   # served from the extension, at this path relative to the HTML
   url: "../talk/katex/"           # (a deck at the root of its folder needs nothing)
 bibliography: refs.bib            # BibTeX/BibLaTeX; a `shorthand` field gives the label
+resources: media/                 # the tour's own pictures and sounds (audio=, logos: are not found by Quarto)
 # This deck shows EVERY feature of the template, one slide per feature group. It lives in the
 # template repository (cloned as _extensions/ of a deck); render it from a deck whose _quarto.yml
 # lists it:  quarto render _extensions/tour/template.qmd

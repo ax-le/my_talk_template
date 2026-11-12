@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Rebuild index.qmd from the PowerPoint, then render.
 #   usage: ../_extensions/tools/build_deck.sh path/to/talk.pptx   (run from a deck folder of the project
-#          all_the_pres/, whose _extensions/ is a clone of the template repository; then
-#          python ../_extensions/tools/share_media.py --root .. moves media shared with other talks)
+#          all_the_pres/, whose _extensions/ is a clone of the template repository). The media go to
+#          the project's shared ../_media/ (share_media.py: a file already there is reused, compared byte for byte)
 # Steps: pptx2qmd (conversion) → sections (section / side-panel slides) → cites (references → [@key])
 #        → highlights (red overlays → hl=) → deck_patches (hand rewrites) → segments (rows of boxes → grid boxes) → captions (picture + name) → tidy (short attributes) → simplify (hand-editable style) → header + render
 # For NEW talks only: the PhD deck (index.qmd) is now edited by hand and must not be rebuilt.
@@ -20,4 +20,5 @@ python3 "$T/tidy.py" "$W/slides_final.md"                      # short attribute
 python3 "$T/simplify.py" "$W/slides_final.md" "$W/slides_final.md"   # hand-editable style (arrows, click groups, shapes…)
 mkdir -p media && cp -r --update=none "$W/media/." media/        # images and audio (wav → mp3)
 { cat "$T/_header.yml"; echo; cat "$W/slides_final.md"; } > index.qmd
+if [ -f ../_quarto.yml ]; then python3 "$T/share_media.py" --apply --root ..; fi   # media/ → ../_media/, no duplicates
 quarto render index.qmd

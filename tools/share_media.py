@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
-"""share_media.py - put the media files used by several talks into ONE shared folder.
+"""share_media.py - move the media of every talk into the ONE shared folder _media/, without duplicates.
 
 Layout (all_the_pres/ = one Quarto project, see its _quarto.yml):
-    <deck>/index.qmd, <deck>/media/...   a talk and the files only it uses
-    _media/...                           files shared by several talks (../_media/<file> from a talk)
+    <deck>/index.qmd   a talk; its pictures and sounds are ../_media/<file>
+    _media/...         the media of every talk, each file once (compared byte for byte)
 
 Run from the project root (all_the_pres/):
     python _extensions/tools/share_media.py            dry run: lists what would change
     python _extensions/tools/share_media.py --apply    does it
+(build_deck.sh runs it after converting a PowerPoint, so a new talk reuses the files already there.)
 
-For every file that exists, byte for byte, in the media/ of two decks or more (or already in _media/):
-  1. it is copied once into _media/, at the same relative path as in media/ (a name already taken by a
-     different file gets the suffix _<hash>); a copy already in _media/ is reused;
-  2. every reference "media/<path>" in the .qmd / .yml / .yaml / .bib files of those decks becomes
-     "../_media/<path>" (images, audio=, mark=, YAML logos, ...);
-  3. the deck copies are deleted (an emptied folder too).
-Then it lists the files of _media/ that no deck mentions any more (left alone).
+For every file in the media/ folder of a deck:
+  1. a file with the same content already in _media/ is reused (whatever its name); otherwise the file is
+     copied to _media/ at the same relative path as in media/, or, if that name is taken by a different
+     file, with the suffix _<hash7> (image10.png of two PowerPoints are rarely the same picture);
+  2. every reference "media/<path>" in the deck's .qmd / .yml / .yaml / .bib files becomes
+     "../_media/<path>" (images, url(...), audio=, mark=, YAML logos, ...);
+  3. the deck copy is deleted, then the emptied media/ folder.
+Then it lists the files of _media/ that no deck mentions (left alone: delete them by hand if unused).
 A deck = a folder of the project root, not starting with "_" or ".", that holds index.qmd.
+Only identical files are found: the same picture saved again (other size, other format) is not.
 """
 import argparse
 import hashlib
@@ -24,7 +27,6 @@ import os
 import re
 import shutil
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 SHARED = "_media"
@@ -70,73 +72,69 @@ def main():
     shared = root / SHARED
     decks = decks_of(root)
 
-    by_hash = defaultdict(list)                       # hash -> [(deck, rel)]
-    for deck in decks:
-        media = deck / "media"
-        if media.is_dir():
-            for p in files_under(media):
-                by_hash[sha(p)].append((deck, p.relative_to(media).as_posix()))
-    in_shared = {}                                    # hash -> rel in _media
-    taken = set()
+    in_shared, taken = {}, set()                      # hash -> path in _media;  paths in _media
     if shared.is_dir():
         for p in files_under(shared):
             rel = p.relative_to(shared).as_posix()
             in_shared.setdefault(sha(p), rel)
             taken.add(rel)
 
-    moves = []                                        # (hash, target rel, [(deck, rel)])
-    for h, uses in sorted(by_hash.items(), key=lambda kv: kv[1][0][1]):
-        if len({d for d, _ in uses}) < 2 and h not in in_shared:
+    word = "" if args.apply else "(dry run) "
+    todo = 0
+    for deck in decks:
+        media = deck / "media"
+        if not media.is_dir():
             continue
-        target = in_shared.get(h)
-        if target is None:
-            target = uses[0][1]
+        plan = []                                     # (rel in media/, rel in _media/, how)
+        for p in files_under(media):
+            rel, h = p.relative_to(media).as_posix(), sha(p)
+            if h in in_shared:
+                plan.append((rel, in_shared[h], "reused"))
+                continue
+            target = rel
             if target in taken:
                 stem, dot, ext = target.rpartition(".")
                 target = f"{stem}_{h[:7]}.{ext}" if dot else f"{target}_{h[:7]}"
             taken.add(target)
             in_shared[h] = target
-        moves.append((h, target, uses))
-
-    if not moves:
-        print("Nothing to share: no file is used by two decks.")
-    word = "" if args.apply else "(dry run) "
-    for h, target, uses in moves:
-        print(f"{word}{SHARED}/{target}")
-        src = uses[0][0] / "media" / uses[0][1]
-        dst = shared / target
-        if args.apply and not dst.exists():
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src, dst)
-        for deck, rel in uses:
-            pat, n = ref_pattern(rel), 0
-            for f in text_files(deck):
-                raw = f.read_bytes()
-                s = raw.decode("utf-8")
-                s2, k = pat.subn(f"../{SHARED}/{target}", s)
-                if k:
-                    n += k
-                    if args.apply:
-                        f.write_bytes(s2.encode("utf-8"))   # line endings untouched
-            print(f"    {deck.name}/media/{rel}: {n} reference(s)")
+            plan.append((rel, target, "new"))
             if args.apply:
-                p = deck / "media" / rel
-                p.unlink()
-                d = p.parent
-                while d != deck / "media" and not any(d.iterdir()):
-                    d.rmdir()
-                    d = d.parent
+                (shared / target).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(p, shared / target)
+        if not plan:
+            continue
+        todo += len(plan)
+        new = sum(1 for _, _, how in plan if how == "new")
+        print(f"{word}{deck.name}: {len(plan)} file(s) -> {SHARED}/  ({new} new, {len(plan) - new} already there)")
+        for rel, target, how in plan:
+            if how == "reused" or target != rel:
+                print(f"    media/{rel}  ->  {SHARED}/{target}" + ("   (same file, reused)" if how == "reused" else "   (name taken)"))
+        # one pass per text file, every pattern at once
+        table = {rel: target for rel, target, _ in plan}
+        pat = re.compile(r"(?<![\w./-])media/(" + "|".join(re.escape(r) for r in sorted(table, key=len, reverse=True)) + r")(?![\w.-])")
+        for f in text_files(deck):
+            s = f.read_bytes().decode("utf-8")
+            s2, k = pat.subn(lambda m: f"../{SHARED}/{table[m.group(1)]}", s)
+            if k:
+                print(f"    {f.relative_to(deck).as_posix()}: {k} reference(s) rewritten")
+                if args.apply:
+                    f.write_bytes(s2.encode("utf-8"))  # line endings untouched
+        if args.apply:
+            shutil.rmtree(media)
 
+    if not todo:
+        print("Nothing to move: no deck has a media/ folder.")
     # files of _media/ that no deck mentions
-    if shared.is_dir():
+    if shared.is_dir() or not args.apply:
         texts = "".join(f.read_text("utf-8", errors="replace") for d in decks for f in text_files(d))
-        unused = [r for r in sorted(taken | {t for _, t, _ in moves})
-                  if f"{SHARED}/{r}" not in texts and (shared / r).exists() and r != "README.md"]
-        if unused and args.apply:
-            print("\nIn _media/ but mentioned by no deck (left alone):")
+        if not args.apply:
+            texts = re.sub(r"(?<![\w./-])media/", f"../{SHARED}/", texts)   # what it will be (approximately)
+        unused = [r for r in sorted(taken) if f"{SHARED}/{r}" not in texts and r != "README.md"]
+        if unused:
+            print(f"\nIn {SHARED}/ but mentioned by no deck (left alone):")
             for r in unused:
                 print(f"    {SHARED}/{r}")
-    if moves and not args.apply:
+    if todo and not args.apply:
         print("\nDry run: nothing changed. Run again with --apply to do it.")
 
 

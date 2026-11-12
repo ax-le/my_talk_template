@@ -57,15 +57,15 @@ Because `_extensions/` is a clone, a template change made from inside any deck i
 
 ### Several talks: one project, one clone, shared media (Axel's set-up: `all_the_pres/`)
 
-With several talks, make the folder holding them ONE Quarto project: a single clone of the template, media shared between talks stored once, and one website.
+With several talks, make the folder holding them ONE Quarto project: a single clone of the template, one media folder for every talk (each file stored once), and one website.
 
 ```
 all_the_pres/
   _quarto.yml          the project: renders every <deck>/index.qmd (+ the tour) into _site/
   index.qmd            landing page of the website: one link per talk
   _extensions/         the ONLY clone of this repository (git-ignored)
-  _media/              media used by several talks:   ![](../_media/logos/irisa.png)
-  phd-defense-quarto/  one folder per talk: index.qmd, refs.bib, media/ (files only this talk uses);
+  _media/              the media of every talk, each file once:   ![](../_media/logos/irisa.png)
+  phd-defense-quarto/  one folder per talk: index.qmd, refs.bib (no media/ of its own);
                        no _quarto.yml of its own (it would make it a separate project)
   _site/               the website (git-ignored), built by  quarto render
 ```
@@ -73,10 +73,10 @@ all_the_pres/
 ```bash
 quarto preview phd-defense-quarto/index.qmd           # one talk, live
 quarto render                                         # every talk + the tour + the landing page → _site/
-python _extensions/tools/share_media.py [--apply]     # files found in several talks' media/ → _media/
+python _extensions/tools/share_media.py [--apply]     # a talk's media/ → _media/ (identical files reused)
 ```
 
-`share_media.py` is a dry run unless given `--apply`: it moves every file that two talks hold byte for byte into `_media/` and rewrites their paths (`media/x.png` → `../_media/x.png`, in images, `audio=`, `mark=`, `logos:`…). A new talk: a new folder with an `index.qmd` (`format: talk-revealjs`), a line in the root `index.qmd`; nothing else. `_site/` is the whole website: the GitHub workflow of `all_the_pres` publishes it on every push (or copy it to any web server); relative paths, so it also works offline from the disk.
+`share_media.py` is a dry run unless given `--apply`: it moves every talk's `media/` into `_media/`, reusing a file already there when the bytes are the same (whatever its name; a name taken by a different file gets a `_<hash>` suffix), and rewrites the paths (`media/x.png` → `../_media/x.png`, in images, `audio=`, `mark=`, `logos:`…). `build_deck.sh` runs it after converting a PowerPoint, so a new talk only adds the pictures and sounds that are not there yet. A new talk: a new folder with an `index.qmd` (`format: talk-revealjs`), a line in the root `index.qmd`; nothing else. `_site/` is the whole website: the GitHub workflow of `all_the_pres` publishes it on every push (or copy it to any web server); relative paths, so it also works offline from the disk.
 
 Two alternatives, if you do not want a clone per deck:
 
